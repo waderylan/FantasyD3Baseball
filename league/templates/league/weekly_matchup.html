@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}{{ matchup.week }} Matchup{% endblock %}
+
+{% block content %}
+<h2>{{ matchup.week }}</h2>
+
+<div class="row text-center mb-4">
+    <div class="col-5">
+        <h3>{{ matchup.team_1.name }}</h3>
+        <h1 class="{% if winner == matchup.team_1 %}text-success{% elif winner == matchup.team_2 %}text-danger{% endif %}">
+            {{ t1_pts|pts_format }}
+        </h1>
+        {% if winner == matchup.team_1 %}<span class="badge bg-success">WIN</span>{% endif %}
+    </div>
+    <div class="col-2 d-flex align-items-center justify-content-center">
+        <h3>vs</h3>
+    </div>
+    <div class="col-5">
+        {% if matchup.team_2 %}
+        <h3>{{ matchup.team_2.name }}</h3>
+        <h1 class="{% if winner == matchup.team_2 %}text-success{% elif winner == matchup.team_1 %}text-danger{% endif %}">
+            {{ t2_pts|pts_format }}
+        </h1>
+        {% if winner == matchup.team_2 %}<span class="badge bg-success">WIN</span>{% endif %}
+        {% else %}
+        <h3><em>BYE</em></h3>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>{{ matchup.team_1.name }} - Player Breakdown</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr><th>Player</th><th>Pos</th><th class="text-end">Points</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in t1_breakdown %}
+                        <tr>
+                            <td>{{ item.player.first_name }} {{ item.player.last_name }}</td>
+                            <td>{{ item.player.position }}</td>
+                            <td class="text-end">{{ item.points|pts_format }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center">No players</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if matchup.team_2 %}
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header"><strong>{{ matchup.team_2.name }} - Player Breakdown</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr><th>Player</th><th>Pos</th><th class="text-end">Points</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in t2_breakdown %}
+                        <tr>
+                            <td>{{ item.player.first_name }} {{ item.player.last_name }}</td>
+                            <td>{{ item.player.position }}</td>
+                            <td class="text-end">{{ item.points|pts_format }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center">No players</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<a href="{% url 'league:schedule' %}" class="btn btn-secondary">Back to Schedule</a>
+{% endblock %}

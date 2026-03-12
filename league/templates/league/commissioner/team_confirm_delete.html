@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Team: {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="card mx-auto" style="max-width: 480px;">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Delete Fantasy Team</h5>
+    </div>
+    <div class="card-body">
+        <p>Are you sure you want to delete <strong>{{ team.name }}</strong>?</p>
+        <p class="text-muted">All {{ team.players.count }} player{{ team.players.count|pluralize }} on this team will be moved to free agency.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                <a href="{% url 'league:manage_teams' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

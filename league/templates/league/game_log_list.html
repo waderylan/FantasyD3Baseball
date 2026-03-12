@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}{{ player }} - Game Logs{% endblock %}
+
+{% block content %}
+<h2>{{ player }} - Game Logs</h2>
+<p><strong>Position:</strong> {{ player.position }} | <strong>Real Team:</strong> {{ player.real_team }}
+{% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team }}{% endif %}</p>
+
+{% if player.is_pitcher %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Game</th>
+                <th class="text-end">IP</th>
+                <th class="text-end">H</th>
+                <th class="text-end">R</th>
+                <th class="text-end">ER</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-end">HR</th>
+                <th class="text-center">W</th>
+                <th class="text-center">L</th>
+                <th class="text-center">SV</th>
+                <th class="text-center">HLD</th>
+                <th class="text-end">Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in log_data %}
+            <tr>
+                <td>{{ item.log.game.date }}</td>
+                <td>{{ item.log.game }}</td>
+                <td class="text-end">{{ item.log.outs|ip_display }}</td>
+                <td class="text-end">{{ item.log.hits }}</td>
+                <td class="text-end">{{ item.log.runs }}</td>
+                <td class="text-end">{{ item.log.er }}</td>
+                <td class="text-end">{{ item.log.bb }}</td>
+                <td class="text-end">{{ item.log.so }}</td>
+                <td class="text-end">{{ item.log.hr }}</td>
+                <td class="text-center">{% if item.log.win %}W{% endif %}</td>
+                <td class="text-center">{% if item.log.loss %}L{% endif %}</td>
+                <td class="text-center">{% if item.log.save_game %}SV{% endif %}</td>
+                <td class="text-center">{% if item.log.hold %}HLD{% endif %}</td>
+                <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="14" class="text-center">No game logs.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Game</th>
+                <th class="text-end">AB</th>
+                <th class="text-end">R</th>
+                <th class="text-end">H</th>
+                <th class="text-end">2B</th>
+                <th class="text-end">3B</th>
+                <th class="text-end">HR</th>
+                <th class="text-end">RBI</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-end">SB</th>
+                <th class="text-end">CS</th>
+                <th class="text-end">HBP</th>
+                <th class="text-end">Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in log_data %}
+            <tr>
+                <td>{{ item.log.game.date }}</td>
+                <td>{{ item.log.game }}</td>
+                <td class="text-end">{{ item.log.ab }}</td>
+                <td class="text-end">{{ item.log.runs }}</td>
+                <td class="text-end">{{ item.log.hits }}</td>
+                <td class="text-end">{{ item.log.doubles }}</td>
+                <td class="text-end">{{ item.log.triples }}</td>
+                <td class="text-end">{{ item.log.hr }}</td>
+                <td class="text-end">{{ item.log.rbi }}</td>
+                <td class="text-end">{{ item.log.bb }}</td>
+                <td class="text-end">{{ item.log.so }}</td>
+                <td class="text-end">{{ item.log.sb }}</td>
+                <td class="text-end">{{ item.log.cs }}</td>
+                <td class="text-end">{{ item.log.hbp }}</td>
+                <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="15" class="text-center">No game logs.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<a href="{% url 'league:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+{% endblock %}

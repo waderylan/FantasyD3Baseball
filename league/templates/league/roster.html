@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}{{ viewed_team.name }} Roster{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ viewed_team.name }}</h2>
+    {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
+    <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
+    {% endif %}
+</div>
+{% if current_week %}<p class="text-muted small mb-3">Current week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</p>{% endif %}
+
+{# ---- Active Lineup ---- #}
+{% with active_rows=slot_rows %}
+
+{# Hitters section #}
+<h5 class="mt-2">Lineup — Hitters</h5>
+<div class="table-responsive mb-3">
+    <table class="table table-sm table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th style="width:55px">Slot</th>
+                <th>Player</th>
+                <th>School</th>
+                <th class="text-end">AB</th>
+                <th class="text-end">H</th>
+                <th class="text-end">HR</th>
+                <th class="text-end">RBI</th>
+                <th class="text-end">R</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SB</th>
+                <th class="text-end">Wk Pts</th>
+                <th class="text-end">Ssn Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in slot_rows %}
+            {% if entry.slot.slot_type != 'P' and entry.slot.slot_type != 'BN' %}
+            <tr {% if not entry.row %}class="table-secondary text-muted"{% endif %}>
+                <td><span class="badge bg-secondary">{{ entry.slot.slot_label }}</span></td>
+                {% if entry.row %}
+                <td><a href="{% url 'league:player_detail' entry.row.player.id %}" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
+                <td>{{ entry.row.player.real_team.abbreviation }}</td>
+                <td class="text-end">{{ entry.row.stats.total_ab|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_h|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_hr|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_rbi|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_r|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_sb|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.weekly_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ entry.row.season_points|pts_format }}</td>
+                {% else %}
+                <td colspan="11" class="fst-italic">Empty</td>
+                {% endif %}
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Pitchers section #}
+<h5>Lineup — Pitchers</h5>
+<div class="table-responsive mb-3">
+    <table class="table table-sm table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th style="width:55px">Slot</th>
+                <th>Player</th>
+                <th>School</th>
+                <th class="text-end">IP</th>
+                <th class="text-end">H</th>
+                <th class="text-end">ER</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-end">HR</th>
+                <th class="text-end">Wk Pts</th>
+                <th class="text-end">Ssn Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in slot_rows %}
+            {% if entry.slot.slot_type == 'P' %}
+            <tr {% if not entry.row %}class="table-secondary text-muted"{% endif %}>
+                <td><span class="badge bg-danger">{{ entry.slot.slot_label }}</span></td>
+                {% if entry.row %}
+                <td><a href="{% url 'league:player_detail' entry.row.player.id %}" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
+                <td>{{ entry.row.player.real_team.abbreviation }}</td>
+                <td class="text-end">{{ entry.row.stats.total_outs|ip_display }}</td>
+                <td class="text-end">{{ entry.row.stats.total_h|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_er|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_so|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_hr|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.weekly_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ entry.row.season_points|pts_format }}</td>
+                {% else %}
+                <td colspan="10" class="fst-italic">Empty</td>
+                {% endif %}
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Bench section #}
+<h5>Bench</h5>
+<div class="table-responsive mb-4">
+    <table class="table table-sm table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th style="width:55px">Slot</th>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>School</th>
+                <th class="text-end">Wk Pts</th>
+                <th class="text-end">Ssn Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in slot_rows %}
+            {% if entry.slot.slot_type == 'BN' %}
+            <tr {% if not entry.row %}class="table-secondary text-muted"{% endif %}>
+                <td><span class="badge bg-dark">{{ entry.slot.slot_label }}</span></td>
+                {% if entry.row %}
+                <td><a href="{% url 'league:player_detail' entry.row.player.id %}" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
+                <td><span class="badge {% if entry.row.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">{{ entry.row.player.position }}</span></td>
+                <td>{{ entry.row.player.real_team.abbreviation }}</td>
+                <td class="text-end">{{ entry.row.weekly_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ entry.row.season_points|pts_format }}</td>
+                {% else %}
+                <td colspan="5" class="fst-italic">Empty</td>
+                {% endif %}
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endwith %}
+
+{# Unslotted players #}
+{% if unslotted %}
+<h5>On Roster — Not in Lineup</h5>
+<p class="text-muted small">These players are on this team but haven't been assigned a lineup slot yet.</p>
+<div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+        <thead class="table-secondary">
+            <tr>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>School</th>
+                <th class="text-end">Wk Pts</th>
+                <th class="text-end">Ssn Pts</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in unslotted %}
+            <tr>
+                <td><a href="{% url 'league:player_detail' row.player.id %}" class="text-decoration-none">{{ row.player.last_name }}, {{ row.player.first_name }}</a></td>
+                <td><span class="badge {% if row.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">{{ row.player.position }}</span></td>
+                <td>{{ row.player.real_team.abbreviation }}</td>
+                <td class="text-end">{{ row.weekly_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ row.season_points|pts_format }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

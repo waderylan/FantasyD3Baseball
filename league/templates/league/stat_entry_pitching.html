@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Pitching Stats Entry{% endblock %}
+
+{% block content %}
+<h2>{% if editing %}Edit{% else %}Enter{% endif %} Pitching Stats</h2>
+<p><strong>Player:</strong> {{ player }}</p>
+<p><strong>Game:</strong> {{ game }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        <div class="col-md-3 col-6">
+            <label class="form-label" for="id_ip">{{ form.ip.label }}</label>
+            {% render_field form.ip class="form-control" placeholder="e.g. 6.2" %}
+            {% if form.ip.errors %}
+            <div class="text-danger small">{{ form.ip.errors.0 }}</div>
+            {% endif %}
+            <small class="text-muted">{{ form.ip.help_text }}</small>
+        </div>
+        {% for field in form %}
+        {% if field.name != 'ip' and field.name != 'win' and field.name != 'loss' and field.name != 'save' and field.name != 'hold' %}
+        <div class="col-md-3 col-6">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% render_field field class="form-control" %}
+            {% if field.errors %}
+            <div class="text-danger small">{{ field.errors.0 }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="row g-3 mt-2">
+        {% for field in form %}
+        {% if field.name == 'win' or field.name == 'loss' or field.name == 'save' or field.name == 'hold' %}
+        <div class="col-md-3 col-6">
+            <div class="form-check">
+                {% render_field field class="form-check-input" %}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Save Stats</button>
+        <a href="{% url 'league:stat_entry_select' game.id %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

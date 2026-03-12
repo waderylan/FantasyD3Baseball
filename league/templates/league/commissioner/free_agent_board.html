@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Free Agent Board{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2>Free Agent Board</h2>
+        <p class="text-muted mb-0">{{ free_agent_count }} player{{ free_agent_count|pluralize }} available</p>
+    </div>
+    <a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Back to Panel</a>
+</div>
+
+{# --- Filters --- #}
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Search Name</label>
+                <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Player name...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Position</label>
+                <select name="position" class="form-select">
+                    <option value="">All Positions</option>
+                    {% for code, label in position_choices %}
+                    <option value="{{ code }}" {% if selected_position == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">School</label>
+                <select name="school" class="form-select">
+                    <option value="">All Schools</option>
+                    {% for team in real_teams %}
+                    <option value="{{ team.id }}" {% if selected_school == team.id|stringformat:"s" %}selected{% endif %}>{{ team.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Class</label>
+                <select name="class_year" class="form-select">
+                    <option value="">All Classes</option>
+                    <option value="FY" {% if selected_class_year == "FY" %}selected{% endif %}>First Year</option>
+                    <option value="SO" {% if selected_class_year == "SO" %}selected{% endif %}>Sophomore</option>
+                    <option value="JR" {% if selected_class_year == "JR" %}selected{% endif %}>Junior</option>
+                    <option value="SR" {% if selected_class_year == "SR" %}selected{% endif %}>Senior</option>
+                    <option value="GR" {% if selected_class_year == "GR" %}selected{% endif %}>Grad</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Sort By</label>
+                <select name="sort" class="form-select">
+                    <option value="last_name" {% if sort == "last_name" %}selected{% endif %}>Last Name</option>
+                    <option value="position" {% if sort == "position" %}selected{% endif %}>Position</option>
+                    <option value="class_year" {% if sort == "class_year" %}selected{% endif %}>Class Year</option>
+                    <option value="school" {% if sort == "school" %}selected{% endif %}>School</option>
+                    <option value="points" {% if sort == "points" %}selected{% endif %}>Season Points</option>
+                </select>
+            </div>
+            <div class="col-12 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'league:free_agent_board' %}" class="btn btn-outline-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# --- Assign Modal --- #}
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="assignForm">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="assignModalLabel">Assign Player to Team</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Assign <strong id="assignPlayerName"></strong> to:</p>
+                    <select name="team_id" class="form-select" required>
+                        <option value="">— Select a team —</option>
+                        {% for team in fantasy_teams %}
+                        <option value="{{ team.id }}">{{ team.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Assign</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# --- Player Table --- #}
+<div class="table-responsive">
+    <table class="table table-striped table-sm table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>
+                    <a href="?search={{ search }}&position={{ selected_position }}&school={{ selected_school }}&class_year={{ selected_class_year }}&sort=last_name"
+                       class="text-white text-decoration-none">Name {% if sort == "last_name" %}▲{% endif %}</a>
+                </th>
+                <th>
+                    <a href="?search={{ search }}&position={{ selected_position }}&school={{ selected_school }}&class_year={{ selected_class_year }}&sort=position"
+                       class="text-white text-decoration-none">Pos {% if sort == "position" %}▲{% endif %}</a>
+                </th>
+                <th>
+                    <a href="?search={{ search }}&position={{ selected_position }}&school={{ selected_school }}&class_year={{ selected_class_year }}&sort=class_year"
+                       class="text-white text-decoration-none">Class {% if sort == "class_year" %}▲{% endif %}</a>
+                </th>
+                <th>
+                    <a href="?search={{ search }}&position={{ selected_position }}&school={{ selected_school }}&class_year={{ selected_class_year }}&sort=school"
+                       class="text-white text-decoration-none">School {% if sort == "school" %}▲{% endif %}</a>
+                </th>
+                <th class="text-end">
+                    <a href="?search={{ search }}&position={{ selected_position }}&school={{ selected_school }}&class_year={{ selected_class_year }}&sort=points"
+                       class="text-white text-decoration-none">Pts {% if sort == "points" %}▼{% endif %}</a>
+                </th>
+                <th class="text-end">Stats</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in player_data %}
+            {% with p=row.player stats=row.stats %}
+            <tr>
+                <td>
+                    <a href="{% url 'league:player_detail' p.id %}" class="text-decoration-none">
+                        {{ p.last_name }}, {{ p.first_name }}
+                    </a>
+                </td>
+                <td>
+                    <span class="badge {% if p.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">
+                        {{ p.position }}
+                    </span>
+                </td>
+                <td>{{ p.class_year|default:"-" }}</td>
+                <td>{{ p.real_team.abbreviation }}</td>
+                <td class="text-end fw-semibold">{{ row.season_points|floatformat:1 }}</td>
+                <td class="text-end small text-muted">
+                    {% if p.is_pitcher %}
+                        {% if stats.total_outs %}
+                            {{ stats.total_outs|default:0 }} outs &bull; {{ stats.total_so|default:0 }} K &bull; {{ stats.total_er|default:0 }} ER
+                        {% else %}
+                            <span class="text-muted">No stats</span>
+                        {% endif %}
+                    {% else %}
+                        {% if stats.total_ab %}
+                            {{ stats.total_ab|default:0 }} AB &bull; {{ stats.total_h|default:0 }} H &bull; {{ stats.total_hr|default:0 }} HR &bull; {{ stats.total_rbi|default:0 }} RBI &bull; {{ stats.total_sb|default:0 }} SB
+                        {% else %}
+                            <span class="text-muted">No stats</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-success"
+                            onclick="openAssign({{ p.id }}, '{{ p.first_name }} {{ p.last_name }}')"
+                            data-bs-toggle="modal"
+                            data-bs-target="#assignModal">
+                        + Add to Team
+                    </button>
+                </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">No free agents match your filters.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+var assignBaseUrl = "{% url 'league:assign_player' player_id=0 %}".replace('/0/', '/PLAYERID/');
+function openAssign(playerId, playerName) {
+    document.getElementById('assignPlayerName').textContent = playerName;
+    document.getElementById('assignForm').action = assignBaseUrl.replace('PLAYERID', playerId);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Point Settings{% endblock %}
+
+{% block content %}
+<h2>Point Settings</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white"><h5 class="mb-0">Hitting Points</h5></div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form %}
+                {% if field.name == 'single' or field.name == 'double' or field.name == 'triple' or field.name == 'hr' or field.name == 'rbi' or field.name == 'run' or field.name == 'bb' or field.name == 'sb' or field.name == 'cs' or field.name == 'hbp' or field.name == 'so_hitting' %}
+                <div class="col-md-3 col-6">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white"><h5 class="mb-0">Pitching Points</h5></div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form %}
+                {% if field.name == 'ip_out' or field.name == 'so_pitching' or field.name == 'win' or field.name == 'loss' or field.name == 'save_pts' or field.name == 'hold_pts' or field.name == 'er' or field.name == 'hit_against' or field.name == 'bb_pitching' or field.name == 'hr_against' %}
+                <div class="col-md-3 col-6">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Point Settings</button>
+    <a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

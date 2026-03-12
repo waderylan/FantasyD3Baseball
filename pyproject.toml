@@ -1,0 +1,13 @@
+[project]
+name = "fantasy-d3-baseball"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.10"
+dependencies = [
+    "django>=5.2.12",
+    "django-widget-tweaks>=1.5.1",
+    "openpyxl>=3.1.5",
+    "playwright>=1.44",
+    "beautifulsoup4>=4.12",
+    "pdfplumber>=0.11.9",
+]

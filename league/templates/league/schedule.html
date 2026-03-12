@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}Schedule{% endblock %}
+
+{% block content %}
+<h2>Season Schedule</h2>
+
+{% for wd in week_data %}
+<div class="card mb-3 {% if wd.is_current %}border-primary{% endif %}">
+    <div class="card-header {% if wd.is_current %}bg-primary text-white{% endif %}">
+        <strong>{{ wd.week }}</strong>
+        {% if wd.is_current %}<span class="badge bg-light text-dark ms-2">Current Week</span>{% endif %}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm mb-0">
+            <thead>
+                <tr>
+                    <th>Team 1</th>
+                    <th class="text-center">Score</th>
+                    <th>Team 2</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for md in wd.matchups %}
+                <tr>
+                    <td class="{% if md.winner == md.matchup.team_1 %}fw-bold{% endif %}">
+                        {{ md.matchup.team_1.name }}
+                    </td>
+                    <td class="text-center">
+                        {{ md.t1_pts|pts_format }} - {{ md.t2_pts|pts_format }}
+                    </td>
+                    <td class="{% if md.winner == md.matchup.team_2 %}fw-bold{% endif %}">
+                        {% if md.matchup.team_2 %}{{ md.matchup.team_2.name }}{% else %}<em>BYE</em>{% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'league:weekly_matchup' wd.week.id md.matchup.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% empty %}
+<div class="alert alert-info">No schedule has been generated yet.
+    {% if request.fantasy_team.is_commissioner %}
+    <a href="{% url 'league:generate_schedule' %}">Generate Schedule</a>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Set Lineup – {{ team.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Set Lineup — {{ team.name }}</h2>
+    <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">View Roster</a>
+</div>
+<p class="text-muted small mb-4">
+    Slots: 1 C &bull; 4 IF &bull; 3 OF &bull; 1 DH (any C/IF/OF) &bull; 5 P &bull; 4 Bench (any)
+</p>
+
+<form method="post" id="lineupForm">
+    {% csrf_token %}
+
+    {% for section in slot_sections %}
+    <h5 class="mt-4 border-bottom pb-1">{{ section.label }}</h5>
+    {% for entry in section.rows %}
+    {% with slot=entry.slot %}
+    <div class="row align-items-center mb-2">
+        <div class="col-auto">
+            <span class="badge bg-secondary" style="min-width:40px;text-align:center;">{{ slot.slot_label }}</span>
+        </div>
+        <div class="col-md-5 col-9">
+            <select name="slot_{{ slot.slot_type }}_{{ slot.slot_number }}" class="form-select form-select-sm player-select">
+                <option value="">— Empty —</option>
+                {% for player in entry.eligible_players %}
+                <option value="{{ player.id }}"
+                    {% if slot.player_id == player.id %}selected{% endif %}>
+                    {{ player.last_name }}, {{ player.first_name }} ({{ player.real_team.abbreviation }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    {% endwith %}
+    {% endfor %}
+    {% endfor %}
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save Lineup</button>
+        <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+document.getElementById('lineupForm').addEventListener('submit', function(e) {
+    const selects = this.querySelectorAll('select.player-select');
+    const seen = {};
+    const dupes = [];
+    selects.forEach(function(sel) {
+        if (!sel.value) return;
+        const label = sel.options[sel.selectedIndex].text.split('(')[0].trim();
+        if (seen[sel.value]) {
+            dupes.push(label);
+        }
+        seen[sel.value] = true;
+    });
+    if (dupes.length) {
+        e.preventDefault();
+        alert('The following player(s) are assigned to multiple slots:\n' + dupes.join('\n') + '\n\nPlease fix before saving.');
+    }
+});
+</script>
+{% endblock %}

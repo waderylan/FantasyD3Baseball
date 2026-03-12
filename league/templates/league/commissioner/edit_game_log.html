@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Game Log{% endblock %}
+
+{% block content %}
+<h2>Edit {{ log_type|title }} Game Log</h2>
+<p><strong>Player:</strong> {{ log.player }} | <strong>Game:</strong> {{ log.game }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row g-3">
+        {% for field in form %}
+        {% if field.name == 'win' or field.name == 'loss' or field.name == 'save' or field.name == 'hold' %}
+        {% else %}
+        <div class="col-md-3 col-6">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% render_field field class="form-control" %}
+            {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+            {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if log_type == 'pitching' %}
+    <div class="row g-3 mt-2">
+        {% for field in form %}
+        {% if field.name == 'win' or field.name == 'loss' or field.name == 'save' or field.name == 'hold' %}
+        <div class="col-md-3 col-6">
+            <div class="form-check">
+                {% render_field field class="form-check-input" %}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'league:player_detail' log.player.id %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

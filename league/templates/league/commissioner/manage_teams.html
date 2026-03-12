@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Fantasy Teams{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Manage Fantasy Teams</h2>
+    <a href="{% url 'league:team_create' %}" class="btn btn-primary">Add Team</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th class="text-center">Players</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in teams %}
+            <tr>
+                <td>{{ team.name }}</td>
+                <td class="text-center">{{ team.players.count }}</td>
+                <td class="text-end">
+                    <a href="{% url 'league:commissioner_team_roster' team.id %}" class="btn btn-sm btn-outline-success">Manage Roster</a>
+                    <a href="{% url 'league:team_edit' team.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="confirmDelete({{ team.id }}, '{{ team.name|escapejs }}')"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center">No teams yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Delete confirmation modal #}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Delete Fantasy Team</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete <strong id="deleteTeamName"></strong>?</p>
+                    <p class="text-muted small">All players on this team will be moved to free agency.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Team</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Back</a>
+
+<script>
+var deleteBaseUrl = "{% url 'league:team_delete' team_id=0 %}".replace('/0/', '/TEAMID/');
+function confirmDelete(teamId, teamName) {
+    document.getElementById('deleteTeamName').textContent = teamName;
+    document.getElementById('deleteForm').action = deleteBaseUrl.replace('TEAMID', teamId);
+}
+</script>
+{% endblock %}

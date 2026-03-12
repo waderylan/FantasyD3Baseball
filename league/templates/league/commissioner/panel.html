@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Commissioner Panel{% endblock %}
+
+{% block content %}
+<h2>Commissioner Panel</h2>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Fantasy Teams</h5>
+                <p class="card-text">{{ team_count }} team{{ team_count|pluralize }}</p>
+                <a href="{% url 'league:manage_teams' %}" class="btn btn-primary">Manage Teams</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Players</h5>
+                <p class="card-text">{{ player_count }} player{{ player_count|pluralize }}</p>
+                <a href="{% url 'league:manage_players' %}" class="btn btn-primary">Manage Players</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Real Teams</h5>
+                <p class="card-text">{{ real_team_count }} team{{ real_team_count|pluralize }}</p>
+                <a href="{% url 'league:manage_real_teams' %}" class="btn btn-primary">Manage Real Teams</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Point Settings</h5>
+                <p class="card-text">Configure scoring values</p>
+                <a href="{% url 'league:point_settings' %}" class="btn btn-warning">Edit Points</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Schedule</h5>
+                <p class="card-text">{{ week_count }} week{{ week_count|pluralize }} generated</p>
+                <a href="{% url 'league:generate_schedule' %}" class="btn btn-warning">Generate Schedule</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-body">
+                <h5 class="card-title">Free Agent Board</h5>
+                <p class="card-text">{{ free_agent_count }} player{{ free_agent_count|pluralize }} available</p>
+                <a href="{% url 'league:free_agent_board' %}" class="btn btn-success">View Free Agents</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

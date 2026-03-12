@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Players{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Manage Players</h2>
+    <a href="{% url 'league:player_create' %}" class="btn btn-primary">Add Player</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Pos</th>
+                <th>Real Team</th>
+                <th>Fantasy Team</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+            <tr>
+                <td>{{ player.first_name }} {{ player.last_name }}</td>
+                <td>{{ player.position }}</td>
+                <td>{{ player.real_team.name }}</td>
+                <td>{{ player.fantasy_team.name|default:"-" }}</td>
+                <td class="text-end">
+                    <a href="{% url 'league:player_edit' player.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="confirmDelete({{ player.id }}, '{{ player.first_name|escapejs }} {{ player.last_name|escapejs }}')"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteModal">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center">No players yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Delete confirmation modal #}
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Delete Player</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Permanently delete <strong id="deletePlayerName"></strong> from the league?</p>
+                    <p class="text-muted small">This also removes all of their game logs and stats.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Player</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Back</a>
+
+<script>
+var deleteBaseUrl = "{% url 'league:player_delete' player_id=0 %}".replace('/0/', '/PLAYERID/');
+function confirmDelete(playerId, playerName) {
+    document.getElementById('deletePlayerName').textContent = playerName;
+    document.getElementById('deleteForm').action = deleteBaseUrl.replace('PLAYERID', playerId);
+}
+</script>
+{% endblock %}

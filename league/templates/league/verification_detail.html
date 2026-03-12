@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}{{ player }}{% endblock %}
+
+{% block content %}
+<h2>{{ player }}</h2>
+<p>
+    <strong>Position:</strong> {{ player.position }} |
+    <strong>Real Team:</strong> {{ player.real_team.name }}
+    {% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team.name }}{% endif %}
+</p>
+
+{% if player.is_pitcher %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Game</th>
+                <th class="text-end">IP</th>
+                <th class="text-end">H</th>
+                <th class="text-end">R</th>
+                <th class="text-end">ER</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-end">HR</th>
+                <th class="text-center">Dec</th>
+                <th class="text-end">Pts</th>
+                <th>Entered By</th>
+                <th>When</th>
+                {% if request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in log_data %}
+            <tr>
+                <td>{{ item.log.game.date }}</td>
+                <td>{{ item.log.game }}</td>
+                <td class="text-end">{{ item.log.outs|ip_display }}</td>
+                <td class="text-end">{{ item.log.hits }}</td>
+                <td class="text-end">{{ item.log.runs }}</td>
+                <td class="text-end">{{ item.log.er }}</td>
+                <td class="text-end">{{ item.log.bb }}</td>
+                <td class="text-end">{{ item.log.so }}</td>
+                <td class="text-end">{{ item.log.hr }}</td>
+                <td class="text-center">
+                    {% if item.log.win %}W{% endif %}
+                    {% if item.log.loss %}L{% endif %}
+                    {% if item.log.save_game %}SV{% endif %}
+                    {% if item.log.hold %}HLD{% endif %}
+                </td>
+                <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                <td>{{ item.log.entered_by|default:"-" }}</td>
+                <td>{{ item.log.entered_at|date:"M d, g:i A" }}</td>
+                {% if request.fantasy_team.is_commissioner %}
+                <td><a href="{% url 'league:edit_game_log' 'pitching' item.log.id %}" class="btn btn-sm btn-warning">Edit</a></td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if request.fantasy_team.is_commissioner %}14{% else %}13{% endif %}" class="text-center">No game logs.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Game</th>
+                <th class="text-end">AB</th>
+                <th class="text-end">R</th>
+                <th class="text-end">H</th>
+                <th class="text-end">2B</th>
+                <th class="text-end">3B</th>
+                <th class="text-end">HR</th>
+                <th class="text-end">RBI</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-end">SB</th>
+                <th class="text-end">CS</th>
+                <th class="text-end">HBP</th>
+                <th class="text-end">Pts</th>
+                <th>Entered By</th>
+                <th>When</th>
+                {% if request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in log_data %}
+            <tr>
+                <td>{{ item.log.game.date }}</td>
+                <td>{{ item.log.game }}</td>
+                <td class="text-end">{{ item.log.ab }}</td>
+                <td class="text-end">{{ item.log.runs }}</td>
+                <td class="text-end">{{ item.log.hits }}</td>
+                <td class="text-end">{{ item.log.doubles }}</td>
+                <td class="text-end">{{ item.log.triples }}</td>
+                <td class="text-end">{{ item.log.hr }}</td>
+                <td class="text-end">{{ item.log.rbi }}</td>
+                <td class="text-end">{{ item.log.bb }}</td>
+                <td class="text-end">{{ item.log.so }}</td>
+                <td class="text-end">{{ item.log.sb }}</td>
+                <td class="text-end">{{ item.log.cs }}</td>
+                <td class="text-end">{{ item.log.hbp }}</td>
+                <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                <td>{{ item.log.entered_by|default:"-" }}</td>
+                <td>{{ item.log.entered_at|date:"M d, g:i A" }}</td>
+                {% if request.fantasy_team.is_commissioner %}
+                <td><a href="{% url 'league:edit_game_log' 'hitting' item.log.id %}" class="btn btn-sm btn-warning">Edit</a></td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if request.fantasy_team.is_commissioner %}18{% else %}17{% endif %}" class="text-center">No game logs.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<a href="{% url 'league:players' %}" class="btn btn-secondary">Back to Players</a>
+{% endblock %}

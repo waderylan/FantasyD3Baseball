@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}Dashboard - {{ team.name }}{% endblock %}
+
+{% block content %}
+<h2>{{ team.name }} Dashboard</h2>
+
+{% if matchup %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">{{ matchup.week }} - Current Matchup</h5>
+    </div>
+    <div class="card-body">
+        {% if matchup.opponent %}
+        <div class="row text-center">
+            <div class="col-5">
+                <h4>{{ team.name }}</h4>
+                <h2 class="{% if matchup.my_points > matchup.opp_points %}text-success{% elif matchup.my_points < matchup.opp_points %}text-danger{% endif %}">
+                    {{ matchup.my_points|pts_format }}
+                </h2>
+            </div>
+            <div class="col-2 d-flex align-items-center justify-content-center">
+                <h3>vs</h3>
+            </div>
+            <div class="col-5">
+                <h4>{{ matchup.opponent.name }}</h4>
+                <h2 class="{% if matchup.opp_points > matchup.my_points %}text-success{% elif matchup.opp_points < matchup.my_points %}text-danger{% endif %}">
+                    {{ matchup.opp_points|pts_format }}
+                </h2>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-center mb-0"><strong>BYE WEEK</strong> - {{ matchup.my_points|pts_format }} points</p>
+        {% endif %}
+    </div>
+</div>
+{% elif current_week %}
+<div class="alert alert-info">No matchup found for the current week.</div>
+{% else %}
+<div class="alert alert-info">No schedule has been generated yet.</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Roster</h5>
+        <a href="{% url 'league:roster' team.id %}" class="btn btn-sm btn-outline-primary">Full Roster View</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Pos</th>
+                    <th>Team</th>
+                    <th class="text-end">Week Pts</th>
+                    <th class="text-end">Season Pts</th>
+                    <th>Logs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in roster %}
+                <tr>
+                    <td>{{ item.player.first_name }} {{ item.player.last_name }}</td>
+                    <td>{{ item.player.position }}</td>
+                    <td>{{ item.player.real_team.abbreviation }}</td>
+                    <td class="text-end">{{ item.weekly_points|pts_format }}</td>
+                    <td class="text-end">{{ item.season_points|pts_format }}</td>
+                    <td><a href="{% url 'league:game_log_list' item.player.id %}" class="btn btn-sm btn-outline-secondary">View</a></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center">No players on roster.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

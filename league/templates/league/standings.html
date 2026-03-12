@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}Standings{% endblock %}
+
+{% block content %}
+<h2>Standings</h2>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Rank</th>
+                <th>Team</th>
+                <th class="text-center">W</th>
+                <th class="text-center">L</th>
+                <th class="text-center">T</th>
+                <th class="text-center">Pct</th>
+                <th class="text-end">PF</th>
+                <th class="text-end">PA</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in standings %}
+            <tr{% if s.team == request.fantasy_team %} class="table-primary"{% endif %}>
+                <td>{{ forloop.counter }}</td>
+                <td>
+                    <a href="{% url 'league:roster' s.team.id %}">{{ s.team.name }}</a>
+                </td>
+                <td class="text-center">{{ s.wins }}</td>
+                <td class="text-center">{{ s.losses }}</td>
+                <td class="text-center">{{ s.ties }}</td>
+                <td class="text-center">{{ s.pct|pct_format }}</td>
+                <td class="text-end">{{ s.points_for|pts_format }}</td>
+                <td class="text-end">{{ s.points_against|pts_format }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center">No teams in the league yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
