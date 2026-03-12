@@ -64,34 +64,41 @@
                 <th>Pos</th>
                 <th>School</th>
                 {% if show_all or selected_fantasy_team %}<th>Fantasy Team</th>{% endif %}
+                {% with base_qs="real_team="|add:selected_real_team|add:"&position="|add:selected_position|add:"&fantasy_team="|add:selected_fantasy_team|add:"&show_all="|add:show_all %}
                 <th class="text-end">
                     {% if sort == 'weekly_points' %}
                         {% if order == 'asc' %}
-                            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&fantasy_team={{ selected_fantasy_team }}&show_all={{ show_all }}&sort=weekly_points&order=desc"
-                               class="text-warning text-decoration-none">Wk Pts &uarr;</a>
+                            <a href="?{{ base_qs }}&sort=weekly_points&order=desc" class="text-warning text-decoration-none">Wk Pts &uarr;</a>
                         {% else %}
-                            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&fantasy_team={{ selected_fantasy_team }}&show_all={{ show_all }}&sort=weekly_points&order=asc"
-                               class="text-warning text-decoration-none">Wk Pts &darr;</a>
+                            <a href="?{{ base_qs }}&sort=weekly_points&order=asc" class="text-warning text-decoration-none">Wk Pts &darr;</a>
                         {% endif %}
                     {% else %}
-                        <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&fantasy_team={{ selected_fantasy_team }}&show_all={{ show_all }}&sort=weekly_points&order=desc"
-                           class="text-white text-decoration-none">Wk Pts</a>
+                        <a href="?{{ base_qs }}&sort=weekly_points&order=desc" class="text-white text-decoration-none">Wk Pts</a>
                     {% endif %}
                 </th>
                 <th class="text-end">
                     {% if sort == 'season_points' or not sort %}
                         {% if order == 'asc' %}
-                            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&fantasy_team={{ selected_fantasy_team }}&show_all={{ show_all }}&sort=season_points&order=desc"
-                               class="text-warning text-decoration-none">Season Pts &uarr;</a>
+                            <a href="?{{ base_qs }}&sort=season_points&order=desc" class="text-warning text-decoration-none">Season Pts &uarr;</a>
                         {% else %}
-                            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&fantasy_team={{ selected_fantasy_team }}&show_all={{ show_all }}&sort=season_points&order=asc"
-                               class="text-warning text-decoration-none">Season Pts &darr;</a>
+                            <a href="?{{ base_qs }}&sort=season_points&order=asc" class="text-warning text-decoration-none">Season Pts &darr;</a>
                         {% endif %}
                     {% else %}
-                        <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&fantasy_team={{ selected_fantasy_team }}&show_all={{ show_all }}&sort=season_points&order=desc"
-                           class="text-white text-decoration-none">Season Pts</a>
+                        <a href="?{{ base_qs }}&sort=season_points&order=desc" class="text-white text-decoration-none">Season Pts</a>
                     {% endif %}
                 </th>
+                <th class="text-end">
+                    {% if sort == 'ppg' %}
+                        {% if order == 'asc' %}
+                            <a href="?{{ base_qs }}&sort=ppg&order=desc" class="text-warning text-decoration-none">Pts/G &uarr;</a>
+                        {% else %}
+                            <a href="?{{ base_qs }}&sort=ppg&order=asc" class="text-warning text-decoration-none">Pts/G &darr;</a>
+                        {% endif %}
+                    {% else %}
+                        <a href="?{{ base_qs }}&sort=ppg&order=desc" class="text-white text-decoration-none">Pts/G</a>
+                    {% endif %}
+                </th>
+                {% endwith %}
                 <th></th>
             </tr>
         </thead>
@@ -110,6 +117,7 @@
                 {% endif %}
                 <td class="text-end">{{ pd.weekly_points|pts_format }}</td>
                 <td class="text-end">{{ pd.season_points|pts_format }}</td>
+                <td class="text-end">{% if pd.games_played %}{{ pd.ppg|pts_format }}{% else %}—{% endif %}</td>
                 <td><a href="{% url 'league:player_detail' pd.player.id %}" class="btn btn-sm btn-outline-primary">Details</a></td>
             </tr>
             {% empty %}

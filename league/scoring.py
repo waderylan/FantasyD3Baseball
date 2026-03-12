@@ -65,15 +65,24 @@ def calc_player_points_for_period(player, start_date, end_date, ps=None):
     return total
 
 
+def _owned_start(player, week_start):
+    """Return the effective start date for scoring: max(week_start, fantasy_team_since)."""
+    if player.fantasy_team_since and player.fantasy_team_since > week_start:
+        return player.fantasy_team_since
+    return week_start
+
+
 def calc_team_weekly_points(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
     total = Decimal('0')
     players = Player.objects.filter(fantasy_team=fantasy_team)
     for player in players:
-        total += calc_player_points_for_period(
-            player, week.start_date, week.end_date, ps
-        )
+        # Only count stats from when the player joined this team
+        if not player.fantasy_team_since or player.fantasy_team_since > week.end_date:
+            continue
+        start = _owned_start(player, week.start_date)
+        total += calc_player_points_for_period(player, start, week.end_date, ps)
     return total
 
 
@@ -93,9 +102,11 @@ def get_player_weekly_breakdown(fantasy_team, week, ps=None):
     players = Player.objects.filter(fantasy_team=fantasy_team)
     breakdown = []
     for player in players:
-        pts = calc_player_points_for_period(
-            player, week.start_date, week.end_date, ps
-        )
+        if not player.fantasy_team_since or player.fantasy_team_since > week.end_date:
+            pts = Decimal('0')
+        else:
+            start = _owned_start(player, week.start_date)
+            pts = calc_player_points_for_period(player, start, week.end_date, ps)
         breakdown.append({'player': player, 'points': pts})
     breakdown.sort(key=lambda x: x['points'], reverse=True)
     return breakdown

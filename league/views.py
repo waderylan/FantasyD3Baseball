@@ -533,15 +533,24 @@ def players_list(request):
             season_pts += pts
             if current_week and w.id == current_week.id:
                 weekly_pts = pts
+        if p.is_pitcher:
+            games_played = PitchingGameLog.objects.filter(player=p).count()
+        else:
+            games_played = HittingGameLog.objects.filter(player=p).count()
+        ppg = (season_pts / games_played).quantize(Decimal('0.01')) if games_played else Decimal('0')
         player_data.append({
             'player': p,
             'season_points': season_pts,
             'weekly_points': weekly_pts,
+            'games_played': games_played,
+            'ppg': ppg,
         })
 
     reverse = (order != 'asc')
     if sort == 'weekly_points':
         player_data.sort(key=lambda x: x['weekly_points'], reverse=reverse)
+    elif sort == 'ppg':
+        player_data.sort(key=lambda x: x['ppg'], reverse=reverse)
     else:
         player_data.sort(key=lambda x: x['season_points'], reverse=reverse)
 
@@ -693,6 +702,7 @@ def drop_player(request, player_id):
     if request.method == 'POST':
         team_name = player.fantasy_team.name if player.fantasy_team else 'no team'
         player.fantasy_team = None
+        player.fantasy_team_since = None
         player.save()
         messages.success(request, f'{player} dropped to free agency from {team_name}.')
     next_url = request.POST.get('next', 'league:free_agent_board')
@@ -900,6 +910,7 @@ def assign_player(request, player_id):
         if team_id:
             team = get_object_or_404(FantasyTeam, pk=team_id, is_commissioner=False)
             player.fantasy_team = team
+            player.fantasy_team_since = datetime.date.today()
             player.save()
             messages.success(request, f'{player} assigned to {team.name}.')
         else:

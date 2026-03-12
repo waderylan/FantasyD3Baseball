@@ -223,10 +223,13 @@ def _score_team_match(lab, lab_tokens, team):
         return 1 + len(lab_tokens) / len(name_tokens)
     if name_norm and (lab.startswith(name_norm) or name_norm.startswith(lab)):
         return 1
-    # Partial overlap: majority of the team's meaningful tokens (len > 1) appear in the label.
-    # Handles "Union College" vs label "union n y" → overlap {"union"} covers 50% of team tokens.
-    sig_name = {t for t in name_tokens if len(t) > 1}
-    sig_lab  = {t for t in lab_tokens  if len(t) > 1}
+    # Partial overlap: majority of the team's meaningful tokens appear in the label.
+    # Strip generic education words so "Washington College" never matches "Ithaca College"
+    # just because both contain "college".
+    _GENERIC = {'college', 'university', 'institute', 'technology', 'polytechnic',
+                'school', 'of', 'the', 'at'}
+    sig_name = {t for t in name_tokens if len(t) > 2 and t not in _GENERIC}
+    sig_lab  = {t for t in lab_tokens  if len(t) > 2 and t not in _GENERIC}
     if sig_name and sig_lab:
         overlap = sig_name & sig_lab
         if len(overlap) >= max(1, len(sig_name) * 0.5):
@@ -374,21 +377,28 @@ class Command(BaseCommand):
                     continue
             raise CommandError(f'--{label} must be MM/DD/YYYY, got: {val!r}')
 
-        start = _parse_date_arg(options['start_date'], 'start-date') if options.get('start_date') \
-            else today - datetime.timedelta(days=DEFAULT_LOOKBACK_DAYS)
-        end = _parse_date_arg(options['end_date'], 'end-date') if options.get('end_date') \
-            else today
+        single_url = options.get('url')
+
+        if single_url:
+            start = _parse_date_arg(options['start_date'], 'start-date') if options.get('start_date') else None
+            end = _parse_date_arg(options['end_date'], 'end-date') if options.get('end_date') else None
+        else:
+            start = _parse_date_arg(options['start_date'], 'start-date') if options.get('start_date') \
+                else today - datetime.timedelta(days=DEFAULT_LOOKBACK_DAYS)
+            end = _parse_date_arg(options['end_date'], 'end-date') if options.get('end_date') \
+                else today
 
         dry_run = options.get('dry_run', False)
         force = options.get('force', False)
 
         calendar_url = (
             f'{CALENDAR_URL}'
-            f'&startdate={start.strftime("%m/%d/%Y")}'
-            f'&enddate={end.strftime("%m/%d/%Y")}'
+            f'&startdate={start.strftime("%m/%d/%Y") if start else ""}'
+            f'&enddate={end.strftime("%m/%d/%Y") if end else ""}'
         )
 
-        self.stdout.write(f'Date range : {start}  ->  {end}')
+        if not single_url:
+            self.stdout.write(f'Date range : {start}  ->  {end}')
         if dry_run:
             self.stdout.write(self.style.WARNING('DRY RUN -- no database writes'))
 
@@ -409,7 +419,6 @@ class Command(BaseCommand):
             )
             page = ctx.new_page()
 
-            single_url = options.get('url')
             if single_url:
                 self.stdout.write(f'Processing single URL: {single_url}')
                 try:
@@ -533,7 +542,12 @@ class Command(BaseCommand):
                         return m.group('away').strip(), m.group('home').strip()
                 return None, None
 
-            all_teams_cal = list(RealTeam.objects.all())
+            # Ensure OOC placeholder exists for out-of-conference opponents
+            ooc_team, _ = RealTeam.objects.get_or_create(
+                abbreviation='OOC',
+                defaults={'name': 'Out of Conference'},
+            )
+            all_teams_cal = list(RealTeam.objects.exclude(abbreviation='OOC'))
 
             # Collect (date_or_None, href, raw_t1, raw_t2) for every box score link.
             # Do NOT deduplicate here — the same URL can appear for two different dates
@@ -812,11 +826,15 @@ class Command(BaseCommand):
                 break
 
             if opponent_label:
-                name_clean = opponent_label.strip()
-                words = [w for w in re.split(r'\s+', re.sub(r'[^A-Za-z0-9\s]', ' ', name_clean)) if w]
-                abbr = ''.join(w[0].upper() for w in words[:4]) if words else re.sub(r'[^A-Za-z0-9]', '', name_clean)[:4].upper() or 'TEAM'
-                opponent, _ = RealTeam.objects.get_or_create(name=name_clean, defaults={'abbreviation': abbr})
-                actual_teams.append(opponent)
+                all_known = list(RealTeam.objects.exclude(abbreviation='OOC'))
+                opponent = _resolve_team(opponent_label, all_known)
+                if opponent and opponent not in actual_teams:
+                    actual_teams.append(opponent)
+
+            # Still only 1 team — opponent is OOC
+            if len(actual_teams) == 1:
+                ooc_team = RealTeam.objects.get(abbreviation='OOC')
+                actual_teams.append(ooc_team)
             else:
                 for t in page_order:
                     if t not in actual_teams:
@@ -830,10 +848,15 @@ class Command(BaseCommand):
         away_team, home_team = actual_teams[0], actual_teams[1]
         self.stdout.write(f'{away_team.name} @ {home_team.name}  ({game_date})')
 
+        # Determine game_number — increment for doubleheaders (same date + teams)
+        existing_count = RealGame.objects.filter(
+            date=game_date, home_team=home_team, away_team=away_team
+        ).count()
         game, _ = RealGame.objects.get_or_create(
             date=game_date,
             home_team=home_team,
             away_team=away_team,
+            game_number=existing_count + 1,
         )
 
         if not force:
@@ -920,7 +943,7 @@ class Command(BaseCommand):
         Uses _resolve_team so it will find real roster teams before creating
         placeholders, preventing garbage team rows from polluting the DB.
         """
-        all_teams = list(RealTeam.objects.all())
+        all_teams = list(RealTeam.objects.exclude(abbreviation='OOC'))
 
         try:
             text_with_lines = soup.get_text('\n', strip=True)
@@ -1043,7 +1066,7 @@ class Command(BaseCommand):
         Falls back to searching all teams when known_teams is None.
         Returns {team: {'batting': table, 'pitching': table}, ...}.
         """
-        candidate_teams = known_teams if known_teams else list(RealTeam.objects.all())
+        candidate_teams = known_teams if known_teams else list(RealTeam.objects.exclude(abbreviation='OOC'))
         create_ph = False
         result = {}
 

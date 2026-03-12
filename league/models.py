@@ -89,6 +89,9 @@ class Player(models.Model):
         FantasyTeam, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='players'
     )
+    fantasy_team_since = models.DateField(null=True, blank=True,
+        help_text='Date this player was added to their current fantasy team'
+    )
 
     class Meta:
         ordering = ['last_name', 'first_name']
@@ -109,13 +112,16 @@ class RealGame(models.Model):
     away_team = models.ForeignKey(
         RealTeam, on_delete=models.CASCADE, related_name='away_games'
     )
+    game_number = models.PositiveSmallIntegerField(default=1,
+        help_text='1 for single game or first game of doubleheader, 2 for second game')
 
     class Meta:
-        ordering = ['-date']
-        unique_together = ['date', 'home_team', 'away_team']
+        ordering = ['-date', 'game_number']
+        unique_together = ['date', 'home_team', 'away_team', 'game_number']
 
     def __str__(self):
-        return f"{self.away_team.abbreviation} @ {self.home_team.abbreviation} ({self.date})"
+        suffix = f' (G{self.game_number})' if self.game_number > 1 else ''
+        return f"{self.away_team.abbreviation} @ {self.home_team.abbreviation} ({self.date}){suffix}"
 
 
 class HittingGameLog(models.Model):
