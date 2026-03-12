@@ -114,6 +114,8 @@ class RealGame(models.Model):
     )
     game_number = models.PositiveSmallIntegerField(default=1,
         help_text='1 for single game or first game of doubleheader, 2 for second game')
+    source_url = models.URLField(max_length=500, null=True, blank=True, unique=True,
+        help_text='Box score URL this game was scraped from')
 
     class Meta:
         ordering = ['-date', 'game_number']
@@ -316,3 +318,61 @@ class Matchup(models.Model):
         if self.team_2:
             return f"Week {self.week.week_number}: {self.team_1} vs {self.team_2}"
         return f"Week {self.week.week_number}: {self.team_1} (BYE)"
+
+
+class PendingRequest(models.Model):
+    REQUEST_TYPES = [
+        ('game_add', 'Add Game'),
+        ('stat_modify', 'Modify Stats'),
+    ]
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('denied', 'Denied'),
+    ]
+    request_type = models.CharField(max_length=20, choices=REQUEST_TYPES)
+    submitted_by = models.ForeignKey(
+        'FantasyTeam', on_delete=models.CASCADE, related_name='submitted_requests'
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.ForeignKey(
+        'FantasyTeam', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reviewed_requests'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    commissioner_note = models.TextField(blank=True)
+    # game_add fields
+    source_url = models.URLField(max_length=500, blank=True)
+    # stat_modify fields
+    player = models.ForeignKey('Player', on_delete=models.CASCADE, null=True, blank=True)
+    game = models.ForeignKey('RealGame', on_delete=models.CASCADE, null=True, blank=True)
+    stat_type = models.CharField(max_length=10, blank=True)  # 'hitting' or 'pitching'
+    proposed_data = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f"{self.get_request_type_display()} by {self.submitted_by} ({self.status})"
+
+
+class ActivityEntry(models.Model):
+    ENTRY_TYPES = [
+        ('add', 'Player Added'),
+        ('drop', 'Player Dropped'),
+        ('request_approved', 'Request Approved'),
+        ('request_denied', 'Request Denied'),
+    ]
+    entry_type = models.CharField(max_length=20, choices=ENTRY_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    fantasy_team = models.ForeignKey(
+        'FantasyTeam', on_delete=models.SET_NULL, null=True, blank=True
+    )
+    player = models.ForeignKey(
+        'Player', on_delete=models.SET_NULL, null=True, blank=True
+    )
+    description = models.TextField()
+
+    class Meta:
+        ordering = ['-created_at']

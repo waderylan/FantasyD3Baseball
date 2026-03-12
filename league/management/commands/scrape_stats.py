@@ -848,16 +848,20 @@ class Command(BaseCommand):
         away_team, home_team = actual_teams[0], actual_teams[1]
         self.stdout.write(f'{away_team.name} @ {home_team.name}  ({game_date})')
 
-        # Determine game_number — increment for doubleheaders (same date + teams)
-        existing_count = RealGame.objects.filter(
-            date=game_date, home_team=home_team, away_team=away_team
-        ).count()
-        game, _ = RealGame.objects.get_or_create(
-            date=game_date,
-            home_team=home_team,
-            away_team=away_team,
-            game_number=existing_count + 1,
-        )
+        # Look up by source URL first — ensures re-runs find the same game
+        # and doubleheaders (same date+teams, different URL) get separate entries.
+        game = RealGame.objects.filter(source_url=url).first()
+        if not game:
+            existing_count = RealGame.objects.filter(
+                date=game_date, home_team=home_team, away_team=away_team
+            ).count()
+            game = RealGame.objects.create(
+                date=game_date,
+                home_team=home_team,
+                away_team=away_team,
+                game_number=existing_count + 1,
+                source_url=url,
+            )
 
         if not force:
             already = (

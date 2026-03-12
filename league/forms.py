@@ -51,10 +51,16 @@ class RealTeamForm(forms.ModelForm):
 class RealGameForm(forms.ModelForm):
     class Meta:
         model = RealGame
-        fields = ['date', 'home_team', 'away_team']
+        fields = ['date', 'home_team', 'away_team', 'source_url']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
+            'source_url': forms.URLInput(attrs={'placeholder': 'https://...'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['source_url'].required = True
+        self.fields['source_url'].label = 'Box Score URL'
 
     def clean(self):
         cleaned = super().clean()
