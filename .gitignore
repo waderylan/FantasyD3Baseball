@@ -37,6 +37,10 @@ desktop.ini
 *.swp
 *.swo
 
+# Claude
+.claude/
+
 # Misc
 nul
 _unicode_check.txt
+
