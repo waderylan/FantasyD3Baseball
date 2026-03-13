@@ -185,7 +185,6 @@ class PitchingGameLog(models.Model):
     win = models.BooleanField(default=False, verbose_name='W')
     loss = models.BooleanField(default=False, verbose_name='L')
     save_game = models.BooleanField(default=False, verbose_name='SV')
-    hold = models.BooleanField(default=False, verbose_name='HLD')
     entered_by = models.ForeignKey(
         FantasyTeam, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -230,16 +229,12 @@ class PointSettings(models.Model):
     loss = models.DecimalField(max_digits=5, decimal_places=2, default=-3)
     save_pts = models.DecimalField(max_digits=5, decimal_places=2, default=5,
                                    verbose_name='Save')
-    hold_pts = models.DecimalField(max_digits=5, decimal_places=2, default=3,
-                                   verbose_name='Hold')
     er = models.DecimalField(max_digits=5, decimal_places=2, default=-1,
                              verbose_name='ER')
     hit_against = models.DecimalField(max_digits=5, decimal_places=2, default=-0.5,
                                       verbose_name='H against')
     bb_pitching = models.DecimalField(max_digits=5, decimal_places=2, default=-0.5,
                                       verbose_name='BB (pitching)')
-    hr_against = models.DecimalField(max_digits=5, decimal_places=2, default=-1,
-                                     verbose_name='HR against')
 
     class Meta:
         verbose_name = 'Point Settings'

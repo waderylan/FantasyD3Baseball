@@ -70,7 +70,6 @@
                     {% if item.log.win %}W{% endif %}
                     {% if item.log.loss %}L{% endif %}
                     {% if item.log.save_game %}SV{% endif %}
-                    {% if item.log.hold %}HLD{% endif %}
                 </td>
                 <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
                 <td>{{ item.log.entered_at|date:"M d, g:i A" }}</td>
@@ -94,7 +93,7 @@
                 <td class="text-end">{{ totals.bb }}</td>
                 <td class="text-end">{{ totals.so }}</td>
                 <td class="text-end">{{ totals.hr }}</td>
-                <td class="text-center">{{ totals.w }}W {{ totals.l }}L {% if totals.sv %}{{ totals.sv }}SV {% endif %}{% if totals.hld %}{{ totals.hld }}HLD{% endif %}</td>
+                <td class="text-center">{{ totals.w }}W {{ totals.l }}L {% if totals.sv %}{{ totals.sv }}SV{% endif %}</td>
                 <td class="text-end">{{ totals.points|pts_format }}</td>
                 <td colspan="{% if request.fantasy_team %}2{% else %}1{% endif %}"></td>
             </tr>

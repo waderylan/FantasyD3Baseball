@@ -51,183 +51,315 @@
 {# ---- Player breakdowns ---- #}
 <div class="row">
 
-    {# Team 1 #}
-    <div class="col-md-6 mb-4">
-        <h5 class="mb-2">{{ matchup.team_1 }}</h5>
+{# ========= TEAM 1 ========= #}
+<div class="col-md-6 mb-4">
+    <h5 class="mb-3 fw-bold">{{ matchup.team_1 }}</h5>
 
-        {# Hitters #}
-        <div class="table-responsive mb-3">
-            <table class="table table-sm table-striped align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Player</th>
-                        <th>Pos</th>
-                        <th class="text-end">AB</th>
-                        <th class="text-end">H</th>
-                        <th class="text-end">2B</th>
-                        <th class="text-end">3B</th>
-                        <th class="text-end">HR</th>
-                        <th class="text-end">RBI</th>
-                        <th class="text-end">R</th>
-                        <th class="text-end">BB</th>
-                        <th class="text-end">HBP</th>
-                        <th class="text-end">SB</th>
-                        <th class="text-end">CS</th>
-                        <th class="text-end fw-bold">Pts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in t1_breakdown %}{% if not item.player.is_pitcher %}
-                    <tr>
-                        <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
-                        <td><span class="badge bg-primary">{{ item.player.position }}</span></td>
-                        <td class="text-end">{{ item.stats.total_ab }}</td>
-                        <td class="text-end">{{ item.stats.total_h }}</td>
-                        <td class="text-end">{{ item.stats.total_2b }}</td>
-                        <td class="text-end">{{ item.stats.total_3b }}</td>
-                        <td class="text-end">{{ item.stats.total_hr }}</td>
-                        <td class="text-end">{{ item.stats.total_rbi }}</td>
-                        <td class="text-end">{{ item.stats.total_r }}</td>
-                        <td class="text-end">{{ item.stats.total_bb }}</td>
-                        <td class="text-end">{{ item.stats.total_hbp }}</td>
-                        <td class="text-end">{{ item.stats.total_sb }}</td>
-                        <td class="text-end">{{ item.stats.total_cs }}</td>
-                        <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
-                    </tr>
-                    {% endif %}{% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {# Pitchers #}
-        <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Player</th>
-                        <th>Pos</th>
-                        <th class="text-end">IP</th>
-                        <th class="text-end">H</th>
-                        <th class="text-end">ER</th>
-                        <th class="text-end">BB</th>
-                        <th class="text-end">SO</th>
-                        <th class="text-center">Dec</th>
-                        <th class="text-end fw-bold">Pts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in t1_breakdown %}{% if item.player.is_pitcher %}
-                    <tr>
-                        <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
-                        <td><span class="badge bg-danger">{{ item.player.position }}</span></td>
-                        <td class="text-end">{{ item.stats.total_outs|ip_display }}</td>
-                        <td class="text-end">{{ item.stats.total_h }}</td>
-                        <td class="text-end">{{ item.stats.total_er }}</td>
-                        <td class="text-end">{{ item.stats.total_bb }}</td>
-                        <td class="text-end">{{ item.stats.total_so }}</td>
-                        <td class="text-center">
-                            {% if item.stats.total_w %}W{% endif %}
-                            {% if item.stats.total_l %}L{% endif %}
-                            {% if item.stats.total_sv %}SV{% endif %}
-                            {% if item.stats.total_hld %}HLD{% endif %}
-                        </td>
-                        <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
-                    </tr>
-                    {% endif %}{% endfor %}
-                </tbody>
-            </table>
-        </div>
+    {# --- Hitters --- #}
+    <div class="table-responsive mb-2">
+        <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Slot</th>
+                    <th>Player</th>
+                    <th class="text-end">AB</th>
+                    <th class="text-end">H</th>
+                    <th class="text-end">2B</th>
+                    <th class="text-end">3B</th>
+                    <th class="text-end">HR</th>
+                    <th class="text-end">RBI</th>
+                    <th class="text-end">R</th>
+                    <th class="text-end">BB</th>
+                    <th class="text-end">HBP</th>
+                    <th class="text-end">SB</th>
+                    <th class="text-end">CS</th>
+                    <th class="text-end fw-bold">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t1_breakdown.hitter_slots %}
+                <tr {% if not item.player %}class="text-muted"{% endif %}>
+                    <td><span class="badge bg-secondary">{{ item.slot_type }}</span></td>
+                    {% if item.player %}
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end">{{ item.stats.total_ab }}</td>
+                    <td class="text-end">{{ item.stats.total_h }}</td>
+                    <td class="text-end">{{ item.stats.total_2b }}</td>
+                    <td class="text-end">{{ item.stats.total_3b }}</td>
+                    <td class="text-end">{{ item.stats.total_hr }}</td>
+                    <td class="text-end">{{ item.stats.total_rbi }}</td>
+                    <td class="text-end">{{ item.stats.total_r }}</td>
+                    <td class="text-end">{{ item.stats.total_bb }}</td>
+                    <td class="text-end">{{ item.stats.total_hbp }}</td>
+                    <td class="text-end">{{ item.stats.total_sb }}</td>
+                    <td class="text-end">{{ item.stats.total_cs }}</td>
+                    <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                    {% else %}
+                    <td class="fst-italic text-muted">Empty</td>
+                    <td colspan="12"></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
-    {# Team 2 #}
-    {% if matchup.team_2 %}
-    <div class="col-md-6 mb-4">
-        <h5 class="mb-2">{{ matchup.team_2 }}</h5>
-
-        {# Hitters #}
-        <div class="table-responsive mb-3">
-            <table class="table table-sm table-striped align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Player</th>
-                        <th>Pos</th>
-                        <th class="text-end">AB</th>
-                        <th class="text-end">H</th>
-                        <th class="text-end">2B</th>
-                        <th class="text-end">3B</th>
-                        <th class="text-end">HR</th>
-                        <th class="text-end">RBI</th>
-                        <th class="text-end">R</th>
-                        <th class="text-end">BB</th>
-                        <th class="text-end">HBP</th>
-                        <th class="text-end">SB</th>
-                        <th class="text-end">CS</th>
-                        <th class="text-end fw-bold">Pts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in t2_breakdown %}{% if not item.player.is_pitcher %}
-                    <tr>
-                        <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
-                        <td><span class="badge bg-primary">{{ item.player.position }}</span></td>
-                        <td class="text-end">{{ item.stats.total_ab }}</td>
-                        <td class="text-end">{{ item.stats.total_h }}</td>
-                        <td class="text-end">{{ item.stats.total_2b }}</td>
-                        <td class="text-end">{{ item.stats.total_3b }}</td>
-                        <td class="text-end">{{ item.stats.total_hr }}</td>
-                        <td class="text-end">{{ item.stats.total_rbi }}</td>
-                        <td class="text-end">{{ item.stats.total_r }}</td>
-                        <td class="text-end">{{ item.stats.total_bb }}</td>
-                        <td class="text-end">{{ item.stats.total_hbp }}</td>
-                        <td class="text-end">{{ item.stats.total_sb }}</td>
-                        <td class="text-end">{{ item.stats.total_cs }}</td>
-                        <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
-                    </tr>
-                    {% endif %}{% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {# Pitchers #}
-        <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Player</th>
-                        <th>Pos</th>
-                        <th class="text-end">IP</th>
-                        <th class="text-end">H</th>
-                        <th class="text-end">ER</th>
-                        <th class="text-end">BB</th>
-                        <th class="text-end">SO</th>
-                        <th class="text-center">Dec</th>
-                        <th class="text-end fw-bold">Pts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in t2_breakdown %}{% if item.player.is_pitcher %}
-                    <tr>
-                        <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
-                        <td><span class="badge bg-danger">{{ item.player.position }}</span></td>
-                        <td class="text-end">{{ item.stats.total_outs|ip_display }}</td>
-                        <td class="text-end">{{ item.stats.total_h }}</td>
-                        <td class="text-end">{{ item.stats.total_er }}</td>
-                        <td class="text-end">{{ item.stats.total_bb }}</td>
-                        <td class="text-end">{{ item.stats.total_so }}</td>
-                        <td class="text-center">
-                            {% if item.stats.total_w %}W{% endif %}
-                            {% if item.stats.total_l %}L{% endif %}
-                            {% if item.stats.total_sv %}SV{% endif %}
-                            {% if item.stats.total_hld %}HLD{% endif %}
-                        </td>
-                        <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
-                    </tr>
-                    {% endif %}{% endfor %}
-                </tbody>
-            </table>
-        </div>
+    {# --- Hitting Bench --- #}
+    {% if t1_breakdown.bench_hitting %}
+    <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle mb-0" style="opacity:0.7">
+            <thead>
+                <tr class="table-secondary">
+                    <th colspan="14" class="small text-muted py-1">Bench — Hitters (not scoring)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t1_breakdown.bench_hitting %}
+                <tr>
+                    <td style="width:50px"><span class="badge bg-secondary">BN</span></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end text-muted">{{ item.stats.total_ab }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_h }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_2b }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_3b }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_hr }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_rbi }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_r }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_bb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_hbp }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_sb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_cs }}</td>
+                    <td class="text-end text-muted">—</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% endif %}
+
+    {# --- Pitchers --- #}
+    <div class="table-responsive mb-2">
+        <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Slot</th>
+                    <th>Player</th>
+                    <th class="text-end">IP</th>
+                    <th class="text-end">H</th>
+                    <th class="text-end">ER</th>
+                    <th class="text-end">BB</th>
+                    <th class="text-end">SO</th>
+                    <th class="text-center">Dec</th>
+                    <th class="text-end fw-bold">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t1_breakdown.pitcher_slots %}
+                <tr {% if not item.player %}class="text-muted"{% endif %}>
+                    <td><span class="badge bg-danger">P</span></td>
+                    {% if item.player %}
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end">{{ item.stats.total_outs|ip_display }}</td>
+                    <td class="text-end">{{ item.stats.total_h }}</td>
+                    <td class="text-end">{{ item.stats.total_er }}</td>
+                    <td class="text-end">{{ item.stats.total_bb }}</td>
+                    <td class="text-end">{{ item.stats.total_so }}</td>
+                    <td class="text-center">{% if item.stats.total_w %}W{% endif %}{% if item.stats.total_l %}L{% endif %}{% if item.stats.total_sv %}SV{% endif %}</td>
+                    <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                    {% else %}
+                    <td class="fst-italic text-muted">Empty</td>
+                    <td colspan="7"></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# --- Pitching Bench --- #}
+    {% if t1_breakdown.bench_pitching %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0" style="opacity:0.7">
+            <thead>
+                <tr class="table-secondary">
+                    <th colspan="9" class="small text-muted py-1">Bench — Pitchers (not scoring)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t1_breakdown.bench_pitching %}
+                <tr>
+                    <td style="width:50px"><span class="badge bg-secondary">BN</span></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end text-muted">{{ item.stats.total_outs|ip_display }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_h }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_er }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_bb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_so }}</td>
+                    <td class="text-center text-muted">{% if item.stats.total_w %}W{% endif %}{% if item.stats.total_l %}L{% endif %}{% if item.stats.total_sv %}SV{% endif %}</td>
+                    <td class="text-end text-muted">—</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+{# ========= TEAM 2 ========= #}
+{% if matchup.team_2 %}
+<div class="col-md-6 mb-4">
+    <h5 class="mb-3 fw-bold">{{ matchup.team_2 }}</h5>
+
+    {# --- Hitters --- #}
+    <div class="table-responsive mb-2">
+        <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Slot</th>
+                    <th>Player</th>
+                    <th class="text-end">AB</th>
+                    <th class="text-end">H</th>
+                    <th class="text-end">2B</th>
+                    <th class="text-end">3B</th>
+                    <th class="text-end">HR</th>
+                    <th class="text-end">RBI</th>
+                    <th class="text-end">R</th>
+                    <th class="text-end">BB</th>
+                    <th class="text-end">HBP</th>
+                    <th class="text-end">SB</th>
+                    <th class="text-end">CS</th>
+                    <th class="text-end fw-bold">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t2_breakdown.hitter_slots %}
+                <tr {% if not item.player %}class="text-muted"{% endif %}>
+                    <td><span class="badge bg-secondary">{{ item.slot_type }}</span></td>
+                    {% if item.player %}
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end">{{ item.stats.total_ab }}</td>
+                    <td class="text-end">{{ item.stats.total_h }}</td>
+                    <td class="text-end">{{ item.stats.total_2b }}</td>
+                    <td class="text-end">{{ item.stats.total_3b }}</td>
+                    <td class="text-end">{{ item.stats.total_hr }}</td>
+                    <td class="text-end">{{ item.stats.total_rbi }}</td>
+                    <td class="text-end">{{ item.stats.total_r }}</td>
+                    <td class="text-end">{{ item.stats.total_bb }}</td>
+                    <td class="text-end">{{ item.stats.total_hbp }}</td>
+                    <td class="text-end">{{ item.stats.total_sb }}</td>
+                    <td class="text-end">{{ item.stats.total_cs }}</td>
+                    <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                    {% else %}
+                    <td class="fst-italic text-muted">Empty</td>
+                    <td colspan="12"></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# --- Hitting Bench --- #}
+    {% if t2_breakdown.bench_hitting %}
+    <div class="table-responsive mb-3">
+        <table class="table table-sm align-middle mb-0" style="opacity:0.7">
+            <thead>
+                <tr class="table-secondary">
+                    <th colspan="14" class="small text-muted py-1">Bench — Hitters (not scoring)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t2_breakdown.bench_hitting %}
+                <tr>
+                    <td style="width:50px"><span class="badge bg-secondary">BN</span></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end text-muted">{{ item.stats.total_ab }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_h }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_2b }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_3b }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_hr }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_rbi }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_r }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_bb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_hbp }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_sb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_cs }}</td>
+                    <td class="text-end text-muted">—</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {# --- Pitchers --- #}
+    <div class="table-responsive mb-2">
+        <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Slot</th>
+                    <th>Player</th>
+                    <th class="text-end">IP</th>
+                    <th class="text-end">H</th>
+                    <th class="text-end">ER</th>
+                    <th class="text-end">BB</th>
+                    <th class="text-end">SO</th>
+                    <th class="text-center">Dec</th>
+                    <th class="text-end fw-bold">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t2_breakdown.pitcher_slots %}
+                <tr {% if not item.player %}class="text-muted"{% endif %}>
+                    <td><span class="badge bg-danger">P</span></td>
+                    {% if item.player %}
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end">{{ item.stats.total_outs|ip_display }}</td>
+                    <td class="text-end">{{ item.stats.total_h }}</td>
+                    <td class="text-end">{{ item.stats.total_er }}</td>
+                    <td class="text-end">{{ item.stats.total_bb }}</td>
+                    <td class="text-end">{{ item.stats.total_so }}</td>
+                    <td class="text-center">{% if item.stats.total_w %}W{% endif %}{% if item.stats.total_l %}L{% endif %}{% if item.stats.total_sv %}SV{% endif %}</td>
+                    <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                    {% else %}
+                    <td class="fst-italic text-muted">Empty</td>
+                    <td colspan="7"></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# --- Pitching Bench --- #}
+    {% if t2_breakdown.bench_pitching %}
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0" style="opacity:0.7">
+            <thead>
+                <tr class="table-secondary">
+                    <th colspan="9" class="small text-muted py-1">Bench — Pitchers (not scoring)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in t2_breakdown.bench_pitching %}
+                <tr>
+                    <td style="width:50px"><span class="badge bg-secondary">BN</span></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td class="text-end text-muted">{{ item.stats.total_outs|ip_display }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_h }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_er }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_bb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_so }}</td>
+                    <td class="text-center text-muted">{% if item.stats.total_w %}W{% endif %}{% if item.stats.total_l %}L{% endif %}{% if item.stats.total_sv %}SV{% endif %}</td>
+                    <td class="text-end text-muted">—</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
 
 </div>
 {% endif %}

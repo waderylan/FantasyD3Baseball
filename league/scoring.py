@@ -30,7 +30,6 @@ def calc_pitching_points(log, ps):
         + Decimal(log.er) * ps.er
         + Decimal(log.hits) * ps.hit_against
         + Decimal(log.bb) * ps.bb_pitching
-        + Decimal(log.hr) * ps.hr_against
     )
     if log.win:
         pts += ps.win
@@ -38,8 +37,6 @@ def calc_pitching_points(log, ps):
         pts += ps.loss
     if log.save_game:
         pts += ps.save_pts
-    if log.hold:
-        pts += ps.hold_pts
     return pts
 
 

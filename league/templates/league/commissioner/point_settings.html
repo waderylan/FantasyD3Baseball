@@ -31,7 +31,7 @@
         <div class="card-body">
             <div class="row g-3">
                 {% for field in form %}
-                {% if field.name == 'ip_out' or field.name == 'so_pitching' or field.name == 'win' or field.name == 'loss' or field.name == 'save_pts' or field.name == 'hold_pts' or field.name == 'er' or field.name == 'hit_against' or field.name == 'bb_pitching' or field.name == 'hr_against' %}
+                {% if field.name == 'ip_out' or field.name == 'so_pitching' or field.name == 'win' or field.name == 'loss' or field.name == 'save_pts' or field.name == 'er' or field.name == 'hit_against' or field.name == 'bb_pitching' %}
                 <div class="col-md-3 col-6">
                     <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                     {% render_field field class="form-control" %}

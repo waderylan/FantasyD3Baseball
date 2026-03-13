@@ -91,7 +91,8 @@ def team_settings(request):
         team.save()
         messages.success(request, 'Display name updated.')
         return redirect('league:team_settings')
-    return render(request, 'league/team_settings.html', {'team': team})
+    ps = PointSettings.load()
+    return render(request, 'league/team_settings.html', {'team': team, 'ps': ps})
 
 
 def dashboard(request):
@@ -179,7 +180,7 @@ def _week_player_stats(player, start_date, end_date):
             total_outs=Sum('outs'), total_h=Sum('hits'), total_er=Sum('er'),
             total_bb=Sum('bb'), total_so=Sum('so'), total_hr=Sum('hr'),
             total_w=Sum('win'), total_l=Sum('loss'),
-            total_sv=Sum('save_game'), total_hld=Sum('hold'),
+            total_sv=Sum('save_game'),
         )
     else:
         agg = HittingGameLog.objects.filter(
@@ -194,18 +195,45 @@ def _week_player_stats(player, start_date, end_date):
 
 
 def _matchup_team_breakdown(team, week, ps):
-    """Return per-player stats + weekly points for active (non-bench) players."""
-    active_ids = RosterSlot.objects.filter(
-        fantasy_team=team, player__isnull=False
-    ).exclude(slot_type='BN').values_list('player_id', flat=True)
-    players = Player.objects.filter(pk__in=active_ids).select_related('real_team')
-    rows = []
-    for player in players:
-        pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
-        stats = _week_player_stats(player, week.start_date, week.end_date)
-        rows.append({'player': player, 'points': pts, 'stats': stats})
-    rows.sort(key=lambda x: (not x['player'].is_pitcher, -x['points']))
-    return rows
+    """Return slot-ordered breakdown: hitter_slots, pitcher_slots, bench_hitting, bench_pitching."""
+    HITTER_ORDER = {'C': 0, 'IF': 1, 'OF': 2, 'DH': 3}
+    slots = RosterSlot.objects.filter(
+        fantasy_team=team
+    ).select_related('player__real_team').order_by('slot_type', 'slot_number')
+
+    hitter_slots = []
+    pitcher_slots = []
+    bench_hitting = []
+    bench_pitching = []
+
+    for slot in slots:
+        player = slot.player
+        if player:
+            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
+            stats = _week_player_stats(player, week.start_date, week.end_date)
+        else:
+            pts = Decimal('0')
+            stats = {}
+        row = {'slot_type': slot.slot_type, 'player': player, 'points': pts, 'stats': stats}
+
+        if slot.slot_type in HITTER_ORDER:
+            hitter_slots.append(row)
+        elif slot.slot_type == 'P':
+            pitcher_slots.append(row)
+        elif slot.slot_type == 'BN':
+            if player and player.is_pitcher:
+                bench_pitching.append(row)
+            elif player:
+                bench_hitting.append(row)
+
+    hitter_slots.sort(key=lambda x: HITTER_ORDER.get(x['slot_type'], 99))
+
+    return {
+        'hitter_slots': hitter_slots,
+        'pitcher_slots': pitcher_slots,
+        'bench_hitting': bench_hitting,
+        'bench_pitching': bench_pitching,
+    }
 
 
 def matchup_view(request):
@@ -496,7 +524,6 @@ def pitching_entry(request, game_id, player_id):
             'win': existing.win,
             'loss': existing.loss,
             'save': existing.save_game,
-            'hold': existing.hold,
         }
 
     form = PitchingGameLogForm(request.POST or initial or None)
@@ -516,7 +543,6 @@ def pitching_entry(request, game_id, player_id):
         log.win = form.cleaned_data['win']
         log.loss = form.cleaned_data['loss']
         log.save_game = form.cleaned_data['save']
-        log.hold = form.cleaned_data['hold']
         log.entered_by = request.fantasy_team
         log.save()
         refresh_player_points(player)
@@ -666,7 +692,7 @@ def player_detail(request, player_id):
         ).select_related('game__home_team', 'game__away_team', 'entered_by')
         log_data = []
         totals = {'outs': 0, 'hits': 0, 'er': 0, 'bb': 0, 'so': 0, 'hr': 0,
-                  'w': 0, 'l': 0, 'sv': 0, 'hld': 0, 'points': Decimal('0')}
+                  'w': 0, 'l': 0, 'sv': 0, 'points': Decimal('0')}
         for log in logs:
             pts = calc_pitching_points(log, ps)
             log_data.append({'log': log, 'points': pts, 'type': 'pitching'})
@@ -679,7 +705,6 @@ def player_detail(request, player_id):
             totals['w']      += int(log.win)
             totals['l']      += int(log.loss)
             totals['sv']     += int(log.save_game)
-            totals['hld']    += int(log.hold)
             totals['points'] += pts
     else:
         logs = HittingGameLog.objects.filter(
@@ -830,7 +855,7 @@ def submit_dispute(request, player_id, game_id):
         initial = {
             'ip': log.ip_display, 'hits': log.hits, 'runs': log.runs,
             'er': log.er, 'bb': log.bb, 'so': log.so, 'hr': log.hr,
-            'win': log.win, 'loss': log.loss, 'save': log.save_game, 'hold': log.hold,
+            'win': log.win, 'loss': log.loss, 'save': log.save_game,
         }
         FormClass = PitchingGameLogForm
     else:
@@ -861,7 +886,7 @@ def submit_dispute(request, player_id, game_id):
                     'outs': cd['ip'], 'hits': cd['hits'], 'runs': cd['runs'],
                     'er': cd['er'], 'bb': cd['bb'], 'so': cd['so'], 'hr': cd['hr'],
                     'win': cd['win'], 'loss': cd['loss'],
-                    'save_game': cd['save'], 'hold': cd['hold'],
+                    'save_game': cd['save'],
                 }
             PendingRequest.objects.create(
                 request_type='stat_modify', submitted_by=team,
@@ -930,7 +955,7 @@ def review_dispute(request, dispute_id):
             'er': pd.get('er', 0), 'bb': pd.get('bb', 0),
             'so': pd.get('so', 0), 'hr': pd.get('hr', 0),
             'win': pd.get('win', False), 'loss': pd.get('loss', False),
-            'save': pd.get('save_game', False), 'hold': pd.get('hold', False),
+            'save': pd.get('save_game', False),
         }
         FormClass = PitchingGameLogForm
     else:
@@ -967,7 +992,6 @@ def review_dispute(request, dispute_id):
                     current_log.win = cd['win']
                     current_log.loss = cd['loss']
                     current_log.save_game = cd['save']
-                    current_log.hold = cd['hold']
                     current_log.save()
                 refresh_player_points(dispute.player)
                 dispute.status = 'approved'
@@ -1005,7 +1029,7 @@ def review_dispute(request, dispute_id):
 def commissioner_panel(request):
     team_count = FantasyTeam.objects.filter(is_commissioner=False).count()
     player_count = Player.objects.count()
-    real_team_count = RealTeam.objects.count()
+    real_team_count = RealTeam.objects.exclude(abbreviation='OOC').count()
     week_count = Week.objects.count()
     free_agent_count = Player.objects.filter(fantasy_team__isnull=True).count()
     pending_disputes = PendingRequest.objects.filter(request_type='stat_modify', status='pending').count()
@@ -1350,7 +1374,6 @@ def edit_game_log(request, log_type, log_id):
             'win': log.win,
             'loss': log.loss,
             'save': log.save_game,
-            'hold': log.hold,
         }
         form = PitchingGameLogForm(request.POST or None, initial=initial)
         if request.method == 'POST' and form.is_valid():
@@ -1364,7 +1387,6 @@ def edit_game_log(request, log_type, log_id):
             log.win = form.cleaned_data['win']
             log.loss = form.cleaned_data['loss']
             log.save_game = form.cleaned_data['save']
-            log.hold = form.cleaned_data['hold']
             log.entered_by = request.fantasy_team
             log.save()
             refresh_player_points(log.player)

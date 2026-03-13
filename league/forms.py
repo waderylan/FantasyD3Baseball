@@ -17,7 +17,7 @@ class FantasyTeamForm(forms.ModelForm):
 
     class Meta:
         model = FantasyTeam
-        fields = ['name']
+        fields = ['name', 'display_name']
 
     def save(self, commit=True):
         team = super().save(commit=False)
@@ -117,7 +117,6 @@ class PitchingGameLogForm(forms.Form):
     win = forms.BooleanField(required=False, label='W')
     loss = forms.BooleanField(required=False, label='L')
     save = forms.BooleanField(required=False, label='SV')
-    hold = forms.BooleanField(required=False, label='HLD')
 
     def clean_ip(self):
         return parse_ip_to_outs(self.cleaned_data['ip'])

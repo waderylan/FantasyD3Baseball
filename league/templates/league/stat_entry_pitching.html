@@ -28,7 +28,7 @@
             <small class="text-muted">{{ form.ip.help_text }}</small>
         </div>
         {% for field in form %}
-        {% if field.name != 'ip' and field.name != 'win' and field.name != 'loss' and field.name != 'save' and field.name != 'hold' %}
+        {% if field.name != 'ip' and field.name != 'win' and field.name != 'loss' and field.name != 'save' %}
         <div class="col-md-3 col-6">
             <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {% render_field field class="form-control" %}
@@ -42,7 +42,7 @@
 
     <div class="row g-3 mt-2">
         {% for field in form %}
-        {% if field.name == 'win' or field.name == 'loss' or field.name == 'save' or field.name == 'hold' %}
+        {% if field.name == 'win' or field.name == 'loss' or field.name == 'save' %}
         <div class="col-md-3 col-6">
             <div class="form-check">
                 {% render_field field class="form-check-input" %}

@@ -5,7 +5,7 @@
 {% block content %}
 <h2 class="mb-4">Settings</h2>
 
-<div class="card" style="max-width: 480px;">
+<div class="card mb-4" style="max-width: 480px;">
     <div class="card-body">
         <h5 class="card-title mb-3">Display Name</h5>
         <p class="text-muted small mb-3">
@@ -23,6 +23,47 @@
             </div>
             <button type="submit" class="btn btn-primary">Save</button>
         </form>
+    </div>
+</div>
+
+<div class="card" style="max-width: 680px;">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Scoring Settings</h5>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-2">Hitting</h6>
+                <table class="table table-sm table-bordered mb-0">
+                    <tbody>
+                        <tr><td>Single</td><td class="text-end fw-bold">{{ ps.single }}</td></tr>
+                        <tr><td>Double</td><td class="text-end fw-bold">{{ ps.double }}</td></tr>
+                        <tr><td>Triple</td><td class="text-end fw-bold">{{ ps.triple }}</td></tr>
+                        <tr><td>Home Run</td><td class="text-end fw-bold">{{ ps.hr }}</td></tr>
+                        <tr><td>RBI</td><td class="text-end fw-bold">{{ ps.rbi }}</td></tr>
+                        <tr><td>Run</td><td class="text-end fw-bold">{{ ps.run }}</td></tr>
+                        <tr><td>Walk</td><td class="text-end fw-bold">{{ ps.bb }}</td></tr>
+                        <tr><td>Stolen Base</td><td class="text-end fw-bold">{{ ps.sb }}</td></tr>
+                        <tr><td>Caught Stealing</td><td class="text-end fw-bold">{{ ps.cs }}</td></tr>
+                        <tr><td>HBP</td><td class="text-end fw-bold">{{ ps.hbp }}</td></tr>
+                        <tr><td>Strikeout</td><td class="text-end fw-bold">{{ ps.so_hitting }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted mb-2">Pitching</h6>
+                <table class="table table-sm table-bordered mb-0">
+                    <tbody>
+                        <tr><td>Per Out Recorded</td><td class="text-end fw-bold">{{ ps.ip_out }}</td></tr>
+                        <tr><td>Strikeout</td><td class="text-end fw-bold">{{ ps.so_pitching }}</td></tr>
+                        <tr><td>Win</td><td class="text-end fw-bold">{{ ps.win }}</td></tr>
+                        <tr><td>Loss</td><td class="text-end fw-bold">{{ ps.loss }}</td></tr>
+                        <tr><td>Save</td><td class="text-end fw-bold">{{ ps.save_pts }}</td></tr>
+                        <tr><td>Earned Run</td><td class="text-end fw-bold">{{ ps.er }}</td></tr>
+                        <tr><td>Hit</td><td class="text-end fw-bold">{{ ps.hit_against }}</td></tr>
+                        <tr><td>Walk</td><td class="text-end fw-bold">{{ ps.bb_pitching }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
