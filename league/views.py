@@ -705,7 +705,7 @@ def player_detail(request, player_id):
     if player.is_pitcher:
         logs = PitchingGameLog.objects.filter(
             player=player
-        ).select_related('game__home_team', 'game__away_team', 'entered_by')
+        ).select_related('game__home_team', 'game__away_team', 'entered_by').order_by('-game__date', '-game__game_number')
         log_data = []
         totals = {'outs': 0, 'hits': 0, 'er': 0, 'bb': 0, 'so': 0, 'hr': 0,
                   'w': 0, 'l': 0, 'sv': 0, 'points': Decimal('0')}
@@ -725,7 +725,7 @@ def player_detail(request, player_id):
     else:
         logs = HittingGameLog.objects.filter(
             player=player
-        ).select_related('game__home_team', 'game__away_team', 'entered_by')
+        ).select_related('game__home_team', 'game__away_team', 'entered_by').order_by('-game__date', '-game__game_number')
         log_data = []
         totals = {'ab': 0, 'runs': 0, 'hits': 0, 'doubles': 0, 'triples': 0,
                   'hr': 0, 'rbi': 0, 'bb': 0, 'so': 0, 'sb': 0, 'cs': 0,

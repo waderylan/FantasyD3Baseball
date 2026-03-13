@@ -44,22 +44,16 @@
 </form>
 
 <script>
-document.getElementById('lineupForm').addEventListener('submit', function(e) {
-    const selects = this.querySelectorAll('select.player-select');
-    const seen = {};
-    const dupes = [];
-    selects.forEach(function(sel) {
-        if (!sel.value) return;
-        const label = sel.options[sel.selectedIndex].text.split('(')[0].trim();
-        if (seen[sel.value]) {
-            dupes.push(label);
-        }
-        seen[sel.value] = true;
+document.querySelectorAll('select.player-select').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+        if (!this.value) return;
+        const chosen = this.value;
+        document.querySelectorAll('select.player-select').forEach(function(other) {
+            if (other !== sel && other.value === chosen) {
+                other.value = '';
+            }
+        });
     });
-    if (dupes.length) {
-        e.preventDefault();
-        alert('The following player(s) are assigned to multiple slots:\n' + dupes.join('\n') + '\n\nPlease fix before saving.');
-    }
 });
 </script>
 {% endblock %}
