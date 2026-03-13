@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}New Dispute — Search Player{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0">New Dispute</h2>
+    <a href="{% url 'league:dispute_list' %}" class="btn btn-secondary btn-sm">Back to My Disputes</a>
+</div>
+
+<form method="get" class="mb-4">
+    <div class="input-group" style="max-width: 480px;">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by player name..." autofocus>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</form>
+
+{% if q %}
+    {% if players %}
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Player</th>
+                    <th>Position</th>
+                    <th>School</th>
+                    <th>Fantasy Team</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in players %}
+                <tr>
+                    <td>{{ p.first_name }} {{ p.last_name }}</td>
+                    <td>{{ p.position }}</td>
+                    <td>{{ p.real_team.abbreviation }}</td>
+                    <td>{{ p.fantasy_team.name|default:"Free Agent" }}</td>
+                    <td>
+                        <a href="{% url 'league:dispute_select_game' p.id %}" class="btn btn-sm btn-outline-warning">
+                            Select
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No players found matching "{{ q }}".</p>
+    {% endif %}
+{% endif %}
+{% endblock %}

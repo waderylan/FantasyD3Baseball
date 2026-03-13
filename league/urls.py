@@ -20,6 +20,9 @@ urlpatterns = [
     path('schedule/week/<int:week_id>/matchup/<int:matchup_id>/',
          views.weekly_matchup_view, name='weekly_matchup'),
 
+    # Matchup page
+    path('matchup/', views.matchup_view, name='matchup'),
+
     # Roster
     path('roster/<int:team_id>/', views.roster_view, name='roster'),
     path('roster/<int:team_id>/lineup/', views.set_lineup, name='set_lineup'),
@@ -36,9 +39,23 @@ urlpatterns = [
     # Game Logs
     path('player/<int:player_id>/logs/', views.game_log_list, name='game_log_list'),
 
+    # Transaction Log
+    path('transactions/', views.transaction_log, name='transaction_log'),
+
+    # Disputes
+    path('disputes/', views.dispute_list, name='dispute_list'),
+    path('disputes/new/', views.dispute_select_player, name='dispute_select_player'),
+    path('disputes/new/<int:player_id>/', views.dispute_select_game, name='dispute_select_game'),
+    path('disputes/<int:player_id>/<int:game_id>/submit/', views.submit_dispute, name='submit_dispute'),
+    path('disputes/<int:dispute_id>/cancel/', views.cancel_dispute, name='cancel_dispute'),
+    path('commissioner/disputes/', views.commissioner_disputes, name='commissioner_disputes'),
+    path('commissioner/disputes/<int:dispute_id>/review/', views.review_dispute, name='review_dispute'),
+
     # Players / Free Agents (public)
     path('players/', views.players_list, name='players'),
     path('players/<int:player_id>/', views.player_detail, name='player_detail'),
+    path('players/<int:player_id>/add/', views.member_add_player, name='member_add_player'),
+    path('players/<int:player_id>/drop/', views.member_drop_player, name='member_drop_player'),
 
     # Commissioner
     path('commissioner/', views.commissioner_panel, name='commissioner_panel'),

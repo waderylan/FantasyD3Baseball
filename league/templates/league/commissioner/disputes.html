@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Disputes{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">Stat Disputes</h2>
+<p class="text-muted mb-4">{{ pending_count }} pending</p>
+
+{% if disputes %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Submitted</th>
+                <th>Team</th>
+                <th>Player</th>
+                <th>Game</th>
+                <th>Type</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in disputes %}
+            <tr>
+                <td class="text-nowrap">{{ d.submitted_at|date:"M d, Y" }}</td>
+                <td>{{ d.submitted_by.name }}</td>
+                <td><a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a></td>
+                <td>{{ d.game }}</td>
+                <td><span class="badge bg-secondary">{{ d.stat_type|upper }}</span></td>
+                <td>{{ d.user_message|default:"—" }}</td>
+                <td>
+                    {% if d.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif d.status == 'approved' %}
+                        <span class="badge bg-success">Approved</span>
+                    {% elif d.status == 'denied' %}
+                        <span class="badge bg-danger">Denied</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if d.status == 'pending' %}
+                    <a href="{% url 'league:review_dispute' d.id %}" class="btn btn-sm btn-primary">Review</a>
+                    {% else %}
+                    <a href="{% url 'league:review_dispute' d.id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No disputes submitted yet.</p>
+{% endif %}
+{% endblock %}

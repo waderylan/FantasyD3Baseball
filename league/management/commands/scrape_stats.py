@@ -432,6 +432,11 @@ class Command(BaseCommand):
                     totals['errors'] += 1
                 browser.close()
                 self._print_totals(totals, dry_run)
+                if not dry_run and totals['imported'] > 0:
+                    self.stdout.write('Refreshing cached player points...')
+                    from league.scoring import refresh_all_players
+                    refresh_all_players()
+                    self.stdout.write(self.style.SUCCESS('Player points updated.'))
                 return
 
             # ---- Load the calendar ----
@@ -634,6 +639,11 @@ class Command(BaseCommand):
             browser.close()
 
         self._print_totals(totals, dry_run)
+        if not dry_run and totals['imported'] > 0:
+            self.stdout.write('Refreshing cached player points...')
+            from league.scoring import refresh_all_players
+            refresh_all_players()
+            self.stdout.write(self.style.SUCCESS('Player points updated.'))
 
     def _print_totals(self, totals, dry_run):
         self.stdout.write(self.style.SUCCESS(

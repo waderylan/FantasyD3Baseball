@@ -18,8 +18,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if request.fantasy_team %}
                 <ul class="navbar-nav me-auto">
+                    {% if not request.fantasy_team.is_commissioner %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'league:dashboard' %}">Dashboard</a>
+                        <a class="nav-link" href="{% url 'league:roster' request.fantasy_team.id %}">My Roster</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'league:matchup' %}">Matchup</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'league:standings' %}">Standings</a>
@@ -27,12 +32,20 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'league:schedule' %}">Schedule</a>
                     </li>
-                    <li class="nav-item">
+                    {% comment %}<li class="nav-item">
                         <a class="nav-link" href="{% url 'league:game_list' %}">Games</a>
-                    </li>
+                    </li>{% endcomment %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'league:players' %}">Players</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'league:transaction_log' %}">Transactions</a>
+                    </li>
+                    {% if not request.fantasy_team.is_commissioner %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'league:dispute_list' %}">Disputes</a>
+                    </li>
+                    {% endif %}
                     {% if request.fantasy_team.is_commissioner %}
                     <li class="nav-item">
                         <a class="nav-link text-warning" href="{% url 'league:commissioner_panel' %}">Commissioner</a>

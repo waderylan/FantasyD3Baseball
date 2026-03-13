@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}Submit Dispute{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">Submit Stat Dispute</h2>
+<p class="text-muted mb-4">{{ player.first_name }} {{ player.last_name }} &mdash; {{ game }}</p>
+
+<div class="row">
+    <div class="col-md-5 me-4">
+        <h6 class="text-muted mb-2">Current Stats</h6>
+        {% if stat_type == 'hitting' %}
+        <table class="table table-sm table-bordered">
+            <tr><th>AB</th><td>{{ log.ab }}</td></tr>
+            <tr><th>R</th><td>{{ log.runs }}</td></tr>
+            <tr><th>H</th><td>{{ log.hits }}</td></tr>
+            <tr><th>2B</th><td>{{ log.doubles }}</td></tr>
+            <tr><th>3B</th><td>{{ log.triples }}</td></tr>
+            <tr><th>HR</th><td>{{ log.hr }}</td></tr>
+            <tr><th>RBI</th><td>{{ log.rbi }}</td></tr>
+            <tr><th>BB</th><td>{{ log.bb }}</td></tr>
+            <tr><th>SO</th><td>{{ log.so }}</td></tr>
+            <tr><th>SB</th><td>{{ log.sb }}</td></tr>
+            <tr><th>CS</th><td>{{ log.cs }}</td></tr>
+            <tr><th>HBP</th><td>{{ log.hbp }}</td></tr>
+        </table>
+        {% else %}
+        <table class="table table-sm table-bordered">
+            <tr><th>IP</th><td>{{ log.outs|ip_display }}</td></tr>
+            <tr><th>H</th><td>{{ log.hits }}</td></tr>
+            <tr><th>R</th><td>{{ log.runs }}</td></tr>
+            <tr><th>ER</th><td>{{ log.er }}</td></tr>
+            <tr><th>BB</th><td>{{ log.bb }}</td></tr>
+            <tr><th>SO</th><td>{{ log.so }}</td></tr>
+            <tr><th>HR</th><td>{{ log.hr }}</td></tr>
+            <tr><th>W</th><td>{% if log.win %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>L</th><td>{% if log.loss %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>SV</th><td>{% if log.save_game %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>HLD</th><td>{% if log.hold %}Yes{% else %}No{% endif %}</td></tr>
+        </table>
+        {% endif %}
+    </div>
+
+    <div class="col-md-5">
+        <h6 class="text-muted mb-2">Corrected Stats</h6>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-2 row align-items-center">
+                <label class="col-3 col-form-label col-form-label-sm fw-bold">{{ field.label }}</label>
+                <div class="col-9">{{ field }}</div>
+                {% if field.errors %}<div class="col-12 text-danger small">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="mb-3 mt-3">
+                <label class="form-label fw-bold">Message <span class="text-muted fw-normal">(optional)</span></label>
+                <textarea name="user_message" class="form-control" rows="3" placeholder="Explain the discrepancy..."></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Submit Dispute</button>
+                <a href="{% url 'league:player_detail' player.id %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

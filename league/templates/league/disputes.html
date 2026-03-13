@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}My Disputes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">My Disputes</h2>
+    <a href="{% url 'league:dispute_select_player' %}" class="btn btn-warning">+ New Dispute</a>
+</div>
+
+{% if disputes %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Submitted</th>
+                <th>Player</th>
+                <th>Game</th>
+                <th>Type</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Commissioner Note</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in disputes %}
+            <tr>
+                <td class="text-nowrap">{{ d.submitted_at|date:"M d, Y" }}</td>
+                <td><a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a></td>
+                <td>{{ d.game }}</td>
+                <td><span class="badge bg-secondary">{{ d.stat_type|upper }}</span></td>
+                <td>{{ d.user_message|default:"—" }}</td>
+                <td>
+                    {% if d.status == 'pending' %}
+                        <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif d.status == 'approved' %}
+                        <span class="badge bg-success">Approved</span>
+                    {% elif d.status == 'denied' %}
+                        <span class="badge bg-danger">Denied</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td>{{ d.commissioner_note|default:"—" }}</td>
+                <td>
+                    {% if d.status == 'pending' %}
+                    <form method="post" action="{% url 'league:cancel_dispute' d.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Cancel this dispute?')">Cancel</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">You haven't submitted any disputes yet.</p>
+{% endif %}
+{% endblock %}

@@ -92,6 +92,10 @@ class Player(models.Model):
     fantasy_team_since = models.DateField(null=True, blank=True,
         help_text='Date this player was added to their current fantasy team'
     )
+    cached_season_points = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    cached_weekly_points = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    cached_games_played  = models.PositiveIntegerField(default=0)
+    cached_ppg           = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
     class Meta:
         ordering = ['last_name', 'first_name']
@@ -301,6 +305,29 @@ class RosterSlot(models.Model):
                 )
 
 
+class Transaction(models.Model):
+    TRANSACTION_TYPES = [
+        ('add', 'Add'),
+        ('drop', 'Drop'),
+    ]
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    fantasy_team = models.ForeignKey(
+        FantasyTeam, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transactions'
+    )
+    player = models.ForeignKey(
+        Player, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transactions'
+    )
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.transaction_type.upper()} {self.player} — {self.fantasy_team} ({self.timestamp:%Y-%m-%d})"
+
+
 class Matchup(models.Model):
     week = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='matchups')
     team_1 = models.ForeignKey(
@@ -329,6 +356,7 @@ class PendingRequest(models.Model):
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('denied', 'Denied'),
+        ('cancelled', 'Cancelled'),
     ]
     request_type = models.CharField(max_length=20, choices=REQUEST_TYPES)
     submitted_by = models.ForeignKey(
@@ -349,6 +377,7 @@ class PendingRequest(models.Model):
     game = models.ForeignKey('RealGame', on_delete=models.CASCADE, null=True, blank=True)
     stat_type = models.CharField(max_length=10, blank=True)  # 'hitting' or 'pitching'
     proposed_data = models.JSONField(null=True, blank=True)
+    user_message = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-submitted_at']
@@ -361,8 +390,10 @@ class ActivityEntry(models.Model):
     ENTRY_TYPES = [
         ('add', 'Player Added'),
         ('drop', 'Player Dropped'),
-        ('request_approved', 'Request Approved'),
-        ('request_denied', 'Request Denied'),
+        ('dispute_submitted', 'Dispute Submitted'),
+        ('dispute_approved', 'Dispute Approved'),
+        ('dispute_denied', 'Dispute Denied'),
+        ('dispute_cancelled', 'Dispute Cancelled'),
     ]
     entry_type = models.CharField(max_length=20, choices=ENTRY_TYPES)
     created_at = models.DateTimeField(auto_now_add=True)

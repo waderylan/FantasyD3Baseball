@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}Review Dispute{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">Review Dispute</h2>
+<p class="text-muted mb-4">
+    {{ dispute.player.first_name }} {{ dispute.player.last_name }} &mdash; {{ dispute.game }}
+    &mdash; submitted by <strong>{{ dispute.submitted_by.name }}</strong>
+    on {{ dispute.submitted_at|date:"M d, Y" }}
+</p>
+
+{% if dispute.user_message %}
+<div class="alert alert-info">
+    <strong>User message:</strong> {{ dispute.user_message }}
+</div>
+{% endif %}
+
+{% if dispute.status != 'pending' %}
+<div class="alert {% if dispute.status == 'approved' %}alert-success{% elif dispute.status == 'denied' %}alert-danger{% else %}alert-secondary{% endif %}">
+    This dispute was <strong>{{ dispute.status }}</strong>
+    {% if dispute.reviewed_by %}by {{ dispute.reviewed_by.name }}{% endif %}
+    {% if dispute.reviewed_at %}on {{ dispute.reviewed_at|date:"M d, Y" }}{% endif %}.
+    {% if dispute.commissioner_note %}<br><strong>Note:</strong> {{ dispute.commissioner_note }}{% endif %}
+</div>
+<a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+{% else %}
+
+<div class="row mb-4">
+    <div class="col-md-5 me-4">
+        <h6 class="text-muted mb-2">Current Stats</h6>
+        {% if dispute.stat_type == 'hitting' %}
+        <table class="table table-sm table-bordered">
+            <tr><th>AB</th><td>{{ current_log.ab }}</td></tr>
+            <tr><th>R</th><td>{{ current_log.runs }}</td></tr>
+            <tr><th>H</th><td>{{ current_log.hits }}</td></tr>
+            <tr><th>2B</th><td>{{ current_log.doubles }}</td></tr>
+            <tr><th>3B</th><td>{{ current_log.triples }}</td></tr>
+            <tr><th>HR</th><td>{{ current_log.hr }}</td></tr>
+            <tr><th>RBI</th><td>{{ current_log.rbi }}</td></tr>
+            <tr><th>BB</th><td>{{ current_log.bb }}</td></tr>
+            <tr><th>SO</th><td>{{ current_log.so }}</td></tr>
+            <tr><th>SB</th><td>{{ current_log.sb }}</td></tr>
+            <tr><th>CS</th><td>{{ current_log.cs }}</td></tr>
+            <tr><th>HBP</th><td>{{ current_log.hbp }}</td></tr>
+        </table>
+        {% else %}
+        <table class="table table-sm table-bordered">
+            <tr><th>IP</th><td>{{ current_log.outs|ip_display }}</td></tr>
+            <tr><th>H</th><td>{{ current_log.hits }}</td></tr>
+            <tr><th>R</th><td>{{ current_log.runs }}</td></tr>
+            <tr><th>ER</th><td>{{ current_log.er }}</td></tr>
+            <tr><th>BB</th><td>{{ current_log.bb }}</td></tr>
+            <tr><th>SO</th><td>{{ current_log.so }}</td></tr>
+            <tr><th>HR</th><td>{{ current_log.hr }}</td></tr>
+            <tr><th>W</th><td>{% if current_log.win %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>L</th><td>{% if current_log.loss %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>SV</th><td>{% if current_log.save_game %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>HLD</th><td>{% if current_log.hold %}Yes{% else %}No{% endif %}</td></tr>
+        </table>
+        {% endif %}
+    </div>
+
+    <div class="col-md-5">
+        <h6 class="text-muted mb-2">Proposed Stats <span class="text-muted fw-normal small">(editable before approving)</span></h6>
+        <form method="post" id="reviewForm">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="mb-2 row align-items-center">
+                <label class="col-3 col-form-label col-form-label-sm fw-bold">{{ field.label }}</label>
+                <div class="col-9">{{ field }}</div>
+                {% if field.errors %}<div class="col-12 text-danger small">{{ field.errors }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="mb-3 mt-3">
+                <label class="form-label fw-bold">Commissioner Note <span class="text-muted fw-normal">(optional)</span></label>
+                <textarea name="commissioner_note" class="form-control" rows="2"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" name="action" value="approve" class="btn btn-success">Approve &amp; Apply Stats</button>
+                <button type="submit" name="action" value="deny" class="btn btn-danger">Deny</button>
+                <a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

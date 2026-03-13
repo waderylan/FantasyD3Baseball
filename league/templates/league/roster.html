@@ -10,7 +10,14 @@
     <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
     {% endif %}
 </div>
-{% if current_week %}<p class="text-muted small mb-3">Current week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</p>{% endif %}
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <span class="text-muted small">Stats:</span>
+    <a href="?range=today" class="btn btn-sm {% if stat_range == 'today' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Today</a>
+    <a href="?range=week" class="btn btn-sm {% if stat_range == 'week' %}btn-dark{% else %}btn-outline-secondary{% endif %}">This Week</a>
+    <a href="?range=season" class="btn btn-sm {% if stat_range == 'season' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Season</a>
+    {% if current_week %}<span class="text-muted small ms-2">Week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>{% endif %}
+</div>
 
 {# ---- Active Lineup ---- #}
 {% with active_rows=slot_rows %}
@@ -31,8 +38,8 @@
                 <th class="text-end">R</th>
                 <th class="text-end">BB</th>
                 <th class="text-end">SB</th>
-                <th class="text-end">Wk Pts</th>
-                <th class="text-end">Ssn Pts</th>
+                <th class="text-end">Points</th>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -50,10 +57,21 @@
                 <td class="text-end">{{ entry.row.stats.total_r|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_sb|default:"0" }}</td>
-                <td class="text-end">{{ entry.row.weekly_points|pts_format }}</td>
-                <td class="text-end fw-bold">{{ entry.row.season_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+                <td>
+                    <form method="post" action="{% url 'league:member_drop_player' entry.row.player.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Drop {{ entry.row.player.first_name }} {{ entry.row.player.last_name }}?')">
+                            Drop
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
                 {% else %}
                 <td colspan="11" class="fst-italic">Empty</td>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<td></td>{% endif %}
                 {% endif %}
             </tr>
             {% endif %}
@@ -77,8 +95,8 @@
                 <th class="text-end">BB</th>
                 <th class="text-end">SO</th>
                 <th class="text-end">HR</th>
-                <th class="text-end">Wk Pts</th>
-                <th class="text-end">Ssn Pts</th>
+                <th class="text-end">Points</th>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -95,10 +113,21 @@
                 <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_so|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_hr|default:"0" }}</td>
-                <td class="text-end">{{ entry.row.weekly_points|pts_format }}</td>
-                <td class="text-end fw-bold">{{ entry.row.season_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+                <td>
+                    <form method="post" action="{% url 'league:member_drop_player' entry.row.player.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Drop {{ entry.row.player.first_name }} {{ entry.row.player.last_name }}?')">
+                            Drop
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
                 {% else %}
                 <td colspan="10" class="fst-italic">Empty</td>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<td></td>{% endif %}
                 {% endif %}
             </tr>
             {% endif %}
@@ -107,56 +136,17 @@
     </table>
 </div>
 
-{# Bench section #}
+{# Bench section — all rostered players not in an active slot #}
 <h5>Bench</h5>
 <div class="table-responsive mb-4">
     <table class="table table-sm table-striped align-middle">
         <thead class="table-dark">
             <tr>
-                <th style="width:55px">Slot</th>
                 <th>Player</th>
                 <th>Pos</th>
                 <th>School</th>
-                <th class="text-end">Wk Pts</th>
-                <th class="text-end">Ssn Pts</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for entry in slot_rows %}
-            {% if entry.slot.slot_type == 'BN' %}
-            <tr {% if not entry.row %}class="table-secondary text-muted"{% endif %}>
-                <td><span class="badge bg-dark">{{ entry.slot.slot_label }}</span></td>
-                {% if entry.row %}
-                <td><a href="{% url 'league:player_detail' entry.row.player.id %}" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
-                <td><span class="badge {% if entry.row.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">{{ entry.row.player.position }}</span></td>
-                <td>{{ entry.row.player.real_team.abbreviation }}</td>
-                <td class="text-end">{{ entry.row.weekly_points|pts_format }}</td>
-                <td class="text-end fw-bold">{{ entry.row.season_points|pts_format }}</td>
-                {% else %}
-                <td colspan="5" class="fst-italic">Empty</td>
-                {% endif %}
-            </tr>
-            {% endif %}
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-{% endwith %}
-
-{# Unslotted players #}
-{% if unslotted %}
-<h5>On Roster — Not in Lineup</h5>
-<p class="text-muted small">These players are on this team but haven't been assigned a lineup slot yet.</p>
-<div class="table-responsive">
-    <table class="table table-sm table-hover align-middle">
-        <thead class="table-secondary">
-            <tr>
-                <th>Player</th>
-                <th>Pos</th>
-                <th>School</th>
-                <th class="text-end">Wk Pts</th>
-                <th class="text-end">Ssn Pts</th>
+                <th class="text-end">Points</th>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -165,12 +155,25 @@
                 <td><a href="{% url 'league:player_detail' row.player.id %}" class="text-decoration-none">{{ row.player.last_name }}, {{ row.player.first_name }}</a></td>
                 <td><span class="badge {% if row.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">{{ row.player.position }}</span></td>
                 <td>{{ row.player.real_team.abbreviation }}</td>
-                <td class="text-end">{{ row.weekly_points|pts_format }}</td>
-                <td class="text-end fw-bold">{{ row.season_points|pts_format }}</td>
+                <td class="text-end fw-bold">{{ row.points|pts_format }}</td>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+                <td>
+                    <form method="post" action="{% url 'league:member_drop_player' row.player.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Drop {{ row.player.first_name }} {{ row.player.last_name }}?')">
+                            Drop
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
             </tr>
+            {% empty %}
+            <tr><td colspan="{% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}5{% else %}4{% endif %}" class="text-center text-muted fst-italic">Bench is empty</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-{% endif %}
+
+{% endwith %}
 {% endblock %}

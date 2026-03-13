@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}New Dispute — Select Game{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0">{{ player.first_name }} {{ player.last_name }}</h2>
+    <a href="{% url 'league:dispute_select_player' %}" class="btn btn-secondary btn-sm">Back</a>
+</div>
+<p class="text-muted">Select the game you want to dispute.</p>
+
+{% if logs %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Game</th>
+                {% if player.is_pitcher %}
+                <th class="text-end">IP</th>
+                <th class="text-end">H</th>
+                <th class="text-end">ER</th>
+                <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-center">Dec</th>
+                {% else %}
+                <th class="text-end">AB</th>
+                <th class="text-end">H</th>
+                <th class="text-end">HR</th>
+                <th class="text-end">RBI</th>
+                <th class="text-end">R</th>
+                <th class="text-end">BB</th>
+                {% endif %}
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.game.date }}</td>
+                <td>{{ log.game }}</td>
+                {% if player.is_pitcher %}
+                <td class="text-end">{{ log.outs|ip_display }}</td>
+                <td class="text-end">{{ log.hits }}</td>
+                <td class="text-end">{{ log.er }}</td>
+                <td class="text-end">{{ log.bb }}</td>
+                <td class="text-end">{{ log.so }}</td>
+                <td class="text-center">
+                    {% if log.win %}W{% endif %}
+                    {% if log.loss %}L{% endif %}
+                    {% if log.save_game %}SV{% endif %}
+                    {% if log.hold %}HLD{% endif %}
+                </td>
+                {% else %}
+                <td class="text-end">{{ log.ab }}</td>
+                <td class="text-end">{{ log.hits }}</td>
+                <td class="text-end">{{ log.hr }}</td>
+                <td class="text-end">{{ log.rbi }}</td>
+                <td class="text-end">{{ log.runs }}</td>
+                <td class="text-end">{{ log.bb }}</td>
+                {% endif %}
+                <td>
+                    <a href="{% url 'league:submit_dispute' player.id log.game.id %}"
+                       class="btn btn-sm btn-outline-warning">Dispute</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No game logs found for this player.</p>
+{% endif %}
+{% endblock %}

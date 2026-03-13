@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Log{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Transaction Log</h2>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Player</th>
+                <th>Position</th>
+                <th>School</th>
+                <th>Team</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in feed %}
+            <tr>
+                <td class="text-nowrap">{{ item.timestamp|date:"M d, Y g:i A" }}</td>
+                <td>
+                    {% if item.kind == 'add' %}
+                        <span class="badge bg-success">ADD</span>
+                    {% elif item.kind == 'drop' %}
+                        <span class="badge bg-danger">DROP</span>
+                    {% elif item.kind == 'dispute_submitted' %}
+                        <span class="badge bg-warning text-dark">DISPUTE</span>
+                    {% elif item.kind == 'dispute_approved' %}
+                        <span class="badge bg-success">DISPUTE APPROVED</span>
+                    {% elif item.kind == 'dispute_denied' %}
+                        <span class="badge bg-danger">DISPUTE DENIED</span>
+                    {% elif item.kind == 'dispute_cancelled' %}
+                        <span class="badge bg-secondary">DISPUTE CANCELLED</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.player %}
+                        <a href="{% url 'league:player_detail' item.player.id %}">{{ item.player.first_name }} {{ item.player.last_name }}</a>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{% if item.player %}{{ item.player.position }}{% else %}—{% endif %}</td>
+                <td>{% if item.player %}{{ item.player.real_team.abbreviation }}{% else %}—{% endif %}</td>
+                <td>{{ item.fantasy_team.name|default:"—" }}</td>
+                <td class="text-muted small">{{ item.description|default:"" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center text-muted py-3">No activity yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

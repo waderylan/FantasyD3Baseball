@@ -5,7 +5,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Set Lineup — {{ team.name }}</h2>
-    <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">View Roster</a>
+    <div class="d-flex gap-2">
+        <button type="submit" form="lineupForm" class="btn btn-primary">Save Lineup</button>
+        <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">Cancel</a>
+    </div>
 </div>
 <p class="text-muted small mb-4">
     Slots: 1 C &bull; 4 IF &bull; 3 OF &bull; 1 DH (any C/IF/OF) &bull; 5 P &bull; 4 Bench (any)
@@ -38,10 +41,6 @@
     {% endfor %}
     {% endfor %}
 
-    <div class="mt-4 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Save Lineup</button>
-        <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">Cancel</a>
-    </div>
 </form>
 
 <script>
