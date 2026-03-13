@@ -10,7 +10,7 @@
         <p class="mb-0">
             <strong>Position:</strong> {{ player.position }} |
             <strong>Real Team:</strong> {{ player.real_team.name }}
-            {% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team.name }}{% endif %}
+            {% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team }}{% endif %}
         </p>
     </div>
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}

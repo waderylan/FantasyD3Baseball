@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Roster: {{ viewed_team.name }}{% endblock %}
+{% block title %}Manage Roster: {{ viewed_team }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Manage Roster: {{ viewed_team.name }}</h2>
+    <h2>Manage Roster: {{ viewed_team }}</h2>
     <a href="{% url 'league:manage_teams' %}" class="btn btn-secondary">Back to Teams</a>
 </div>
 
@@ -94,7 +94,7 @@
                 <td>{{ player.real_team.abbreviation }}</td>
                 <td>
                     {% if player.fantasy_team %}
-                        <span class="text-muted">{{ player.fantasy_team.name }}</span>
+                        <span class="text-muted">{{ player.fantasy_team }}</span>
                     {% else %}
                         <span class="text-success">Free Agent</span>
                     {% endif %}
@@ -132,7 +132,7 @@
                     <select name="team_id" class="form-select" required>
                         <option value="">— Select a team —</option>
                         {% for team in other_teams %}
-                        <option value="{{ team.id }}">{{ team.name }}</option>
+                        <option value="{{ team.id }}">{{ team }}</option>
                         {% endfor %}
                     </select>
                 </div>

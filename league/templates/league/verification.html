@@ -45,7 +45,7 @@
         <select name="fantasy_team" class="form-select">
             <option value="">All Fantasy Teams</option>
             {% for ft in fantasy_teams %}
-            <option value="{{ ft.id }}" {% if selected_fantasy_team == ft.id|stringformat:"d" %}selected{% endif %}>{{ ft.name }}</option>
+            <option value="{{ ft.id }}" {% if selected_fantasy_team == ft.id|stringformat:"d" %}selected{% endif %}>{{ ft }}</option>
             {% endfor %}
         </select>
     </div>
@@ -120,7 +120,7 @@
                 </td>
                 <td>{{ pd.player.real_team.abbreviation }}</td>
                 {% if show_all or selected_fantasy_team %}
-                <td>{{ pd.player.fantasy_team.name|default:"—" }}</td>
+                <td>{{ pd.player.fantasy_team|default:"—" }}</td>
                 {% endif %}
                 <td class="text-end">{{ pd.weekly_points|pts_format }}</td>
                 <td class="text-end">{{ pd.season_points|pts_format }}</td>

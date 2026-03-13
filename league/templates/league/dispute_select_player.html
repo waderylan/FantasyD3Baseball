@@ -35,7 +35,7 @@
                     <td>{{ p.first_name }} {{ p.last_name }}</td>
                     <td>{{ p.position }}</td>
                     <td>{{ p.real_team.abbreviation }}</td>
-                    <td>{{ p.fantasy_team.name|default:"Free Agent" }}</td>
+                    <td>{{ p.fantasy_team|default:"Free Agent" }}</td>
                     <td>
                         <a href="{% url 'league:dispute_select_game' p.id %}" class="btn btn-sm btn-outline-warning">
                             Select

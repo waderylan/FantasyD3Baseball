@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Set Lineup – {{ team.name }}{% endblock %}
+{% block title %}Set Lineup – {{ team }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Set Lineup — {{ team.name }}</h2>
+    <h2>Set Lineup — {{ team }}</h2>
     <div class="d-flex gap-2">
         <button type="submit" form="lineupForm" class="btn btn-primary">Save Lineup</button>
         <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">Cancel</a>

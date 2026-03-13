@@ -25,7 +25,7 @@
             {% for d in disputes %}
             <tr>
                 <td class="text-nowrap">{{ d.submitted_at|date:"M d, Y" }}</td>
-                <td>{{ d.submitted_by.name }}</td>
+                <td>{{ d.submitted_by }}</td>
                 <td><a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a></td>
                 <td>{{ d.game }}</td>
                 <td><span class="badge bg-secondary">{{ d.stat_type|upper }}</span></td>

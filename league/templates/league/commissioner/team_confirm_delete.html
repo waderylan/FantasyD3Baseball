@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Delete Team: {{ team.name }}{% endblock %}
+{% block title %}Delete Team: {{ team }}{% endblock %}
 
 {% block content %}
 <div class="card mx-auto" style="max-width: 480px;">
@@ -8,7 +8,7 @@
         <h5 class="mb-0">Delete Fantasy Team</h5>
     </div>
     <div class="card-body">
-        <p>Are you sure you want to delete <strong>{{ team.name }}</strong>?</p>
+        <p>Are you sure you want to delete <strong>{{ team }}</strong>?</p>
         <p class="text-muted">All {{ team.players.count }} player{{ team.players.count|pluralize }} on this team will be moved to free agency.</p>
         <form method="post">
             {% csrf_token %}

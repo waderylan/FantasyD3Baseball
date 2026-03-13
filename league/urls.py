@@ -11,6 +11,7 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('settings/', views.team_settings, name='team_settings'),
 
     # Standings
     path('standings/', views.standings_view, name='standings'),

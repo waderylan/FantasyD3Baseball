@@ -15,6 +15,7 @@ class RealTeam(models.Model):
 
 class FantasyTeam(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    display_name = models.CharField(max_length=100, blank=True)
     password_hash = models.CharField(max_length=256)
     is_commissioner = models.BooleanField(default=False)
 
@@ -22,7 +23,7 @@ class FantasyTeam(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return self.name
+        return self.display_name or self.name
 
     def set_password(self, raw_password):
         self.password_hash = make_password(raw_password)

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% load league_extras %}
 
-{% block title %}{{ viewed_team.name }} Roster{% endblock %}
+{% block title %}{{ viewed_team }} Roster{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>{{ viewed_team.name }}</h2>
+    <h2>{{ viewed_team }}</h2>
     {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
     <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
     {% endif %}

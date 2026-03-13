@@ -8,7 +8,7 @@
 
 <div class="row text-center mb-4">
     <div class="col-5">
-        <h3>{{ matchup.team_1.name }}</h3>
+        <h3>{{ matchup.team_1 }}</h3>
         <h1 class="{% if winner == matchup.team_1 %}text-success{% elif winner == matchup.team_2 %}text-danger{% endif %}">
             {{ t1_pts|pts_format }}
         </h1>
@@ -19,7 +19,7 @@
     </div>
     <div class="col-5">
         {% if matchup.team_2 %}
-        <h3>{{ matchup.team_2.name }}</h3>
+        <h3>{{ matchup.team_2 }}</h3>
         <h1 class="{% if winner == matchup.team_2 %}text-success{% elif winner == matchup.team_1 %}text-danger{% endif %}">
             {{ t2_pts|pts_format }}
         </h1>
@@ -33,7 +33,7 @@
 <div class="row">
     <div class="col-md-6">
         <div class="card mb-3">
-            <div class="card-header"><strong>{{ matchup.team_1.name }} - Player Breakdown</strong></div>
+            <div class="card-header"><strong>{{ matchup.team_1 }} - Player Breakdown</strong></div>
             <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead>
@@ -58,7 +58,7 @@
     {% if matchup.team_2 %}
     <div class="col-md-6">
         <div class="card mb-3">
-            <div class="card-header"><strong>{{ matchup.team_2.name }} - Player Breakdown</strong></div>
+            <div class="card-header"><strong>{{ matchup.team_2 }} - Player Breakdown</strong></div>
             <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <thead>

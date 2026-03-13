@@ -44,7 +44,7 @@
                 </td>
                 <td>{% if item.player %}{{ item.player.position }}{% else %}—{% endif %}</td>
                 <td>{% if item.player %}{{ item.player.real_team.abbreviation }}{% else %}—{% endif %}</td>
-                <td>{{ item.fantasy_team.name|default:"—" }}</td>
+                <td>{{ item.fantasy_team|default:"—" }}</td>
                 <td class="text-muted small">{{ item.description|default:"" }}</td>
             </tr>
             {% empty %}

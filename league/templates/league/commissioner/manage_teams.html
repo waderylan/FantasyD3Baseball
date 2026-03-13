@@ -20,13 +20,13 @@
         <tbody>
             {% for team in teams %}
             <tr>
-                <td>{{ team.name }}</td>
+                <td>{{ team }}</td>
                 <td class="text-center">{{ team.players.count }}</td>
                 <td class="text-end">
                     <a href="{% url 'league:commissioner_team_roster' team.id %}" class="btn btn-sm btn-outline-success">Manage Roster</a>
                     <a href="{% url 'league:team_edit' team.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
                     <button class="btn btn-sm btn-outline-danger"
-                            onclick="confirmDelete({{ team.id }}, '{{ team.name|escapejs }}')"
+                            onclick="confirmDelete({{ team.id }}, '{{ team|escapejs }}')"
                             data-bs-toggle="modal"
                             data-bs-target="#deleteModal">
                         Delete

@@ -25,7 +25,7 @@
                 <td>{{ player.first_name }} {{ player.last_name }}</td>
                 <td>{{ player.position }}</td>
                 <td>{{ player.real_team.name }}</td>
-                <td>{{ player.fantasy_team.name|default:"-" }}</td>
+                <td>{{ player.fantasy_team|default:"-" }}</td>
                 <td class="text-end">
                     <a href="{% url 'league:player_edit' player.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
                     <button class="btn btn-sm btn-outline-danger"

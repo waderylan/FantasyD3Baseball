@@ -7,7 +7,7 @@
 <h2 class="mb-1">Review Dispute</h2>
 <p class="text-muted mb-4">
     {{ dispute.player.first_name }} {{ dispute.player.last_name }} &mdash; {{ dispute.game }}
-    &mdash; submitted by <strong>{{ dispute.submitted_by.name }}</strong>
+    &mdash; submitted by <strong>{{ dispute.submitted_by }}</strong>
     on {{ dispute.submitted_at|date:"M d, Y" }}
 </p>
 
@@ -20,7 +20,7 @@
 {% if dispute.status != 'pending' %}
 <div class="alert {% if dispute.status == 'approved' %}alert-success{% elif dispute.status == 'denied' %}alert-danger{% else %}alert-secondary{% endif %}">
     This dispute was <strong>{{ dispute.status }}</strong>
-    {% if dispute.reviewed_by %}by {{ dispute.reviewed_by.name }}{% endif %}
+    {% if dispute.reviewed_by %}by {{ dispute.reviewed_by }}{% endif %}
     {% if dispute.reviewed_at %}on {{ dispute.reviewed_at|date:"M d, Y" }}{% endif %}.
     {% if dispute.commissioner_note %}<br><strong>Note:</strong> {{ dispute.commissioner_note }}{% endif %}
 </div>

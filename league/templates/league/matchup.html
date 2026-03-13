@@ -18,7 +18,7 @@
         <select name="matchup_id" class="form-select form-select-sm" style="min-width:260px" onchange="this.form.submit()">
             {% for m in all_matchups %}
             <option value="{{ m.id }}" {% if m.id == matchup.id %}selected{% endif %}>
-                {{ m.team_1.name }} vs {% if m.team_2 %}{{ m.team_2.name }}{% else %}BYE{% endif %}
+                {{ m.team_1 }} vs {% if m.team_2 %}{{ m.team_2 }}{% else %}BYE{% endif %}
             </option>
             {% endfor %}
         </select>
@@ -29,7 +29,7 @@
 <div class="row text-center mb-4">
     <div class="col-5">
         <a href="{% url 'league:roster' matchup.team_1.id %}" class="text-decoration-none">
-            <h3>{{ matchup.team_1.name }}</h3>
+            <h3>{{ matchup.team_1 }}</h3>
         </a>
         <h1 class="display-4 fw-bold">{{ t1_pts|pts_format }}</h1>
     </div>
@@ -39,7 +39,7 @@
     <div class="col-5">
         {% if matchup.team_2 %}
         <a href="{% url 'league:roster' matchup.team_2.id %}" class="text-decoration-none">
-            <h3>{{ matchup.team_2.name }}</h3>
+            <h3>{{ matchup.team_2 }}</h3>
         </a>
         <h1 class="display-4 fw-bold">{{ t2_pts|pts_format }}</h1>
         {% else %}
@@ -53,7 +53,7 @@
 
     {# Team 1 #}
     <div class="col-md-6 mb-4">
-        <h5 class="mb-2">{{ matchup.team_1.name }}</h5>
+        <h5 class="mb-2">{{ matchup.team_1 }}</h5>
 
         {# Hitters #}
         <div class="table-responsive mb-3">
@@ -142,7 +142,7 @@
     {# Team 2 #}
     {% if matchup.team_2 %}
     <div class="col-md-6 mb-4">
-        <h5 class="mb-2">{{ matchup.team_2.name }}</h5>
+        <h5 class="mb-2">{{ matchup.team_2 }}</h5>
 
         {# Hitters #}
         <div class="table-responsive mb-3">

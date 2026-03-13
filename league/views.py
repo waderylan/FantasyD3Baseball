@@ -82,6 +82,18 @@ def logout_view(request):
 
 # --- Dashboard ---
 
+@login_required
+def team_settings(request):
+    team = request.fantasy_team
+    if request.method == 'POST':
+        display_name = request.POST.get('display_name', '').strip()
+        team.display_name = display_name
+        team.save()
+        messages.success(request, 'Display name updated.')
+        return redirect('league:team_settings')
+    return render(request, 'league/team_settings.html', {'team': team})
+
+
 def dashboard(request):
     team = request.fantasy_team
     if team:
