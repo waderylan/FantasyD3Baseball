@@ -86,10 +86,26 @@ def logout_view(request):
 def team_settings(request):
     team = request.fantasy_team
     if request.method == 'POST':
-        display_name = request.POST.get('display_name', '').strip()
-        team.display_name = display_name
-        team.save()
-        messages.success(request, 'Display name updated.')
+        form_type = request.POST.get('form_type')
+        if form_type == 'password':
+            old_pw = request.POST.get('old_password', '')
+            new_pw = request.POST.get('new_password', '').strip()
+            confirm_pw = request.POST.get('confirm_password', '').strip()
+            if not team.check_password(old_pw):
+                messages.error(request, 'Current password is incorrect.')
+            elif not new_pw:
+                messages.error(request, 'New password cannot be blank.')
+            elif new_pw != confirm_pw:
+                messages.error(request, 'New passwords do not match.')
+            else:
+                team.set_password(new_pw)
+                team.save()
+                messages.success(request, 'Password updated.')
+        else:
+            display_name = request.POST.get('display_name', '').strip()
+            team.display_name = display_name
+            team.save()
+            messages.success(request, 'Display name updated.')
         return redirect('league:team_settings')
     ps = PointSettings.load()
     return render(request, 'league/team_settings.html', {'team': team, 'ps': ps})
