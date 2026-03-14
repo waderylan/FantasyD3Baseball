@@ -71,4 +71,9 @@
 {% else %}
 <p class="text-muted">No game logs found for this player.</p>
 {% endif %}
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <a href="{% url 'league:dispute_select_player' %}" class="btn btn-secondary">Back</a>
+    <a href="{% url 'league:submit_missing_game_dispute' player.id %}" class="btn btn-outline-warning">Report Missing Game</a>
+</div>
 {% endblock %}

@@ -16,7 +16,7 @@ from .models import (
 from .forms import (
     LoginForm, FantasyTeamForm, PlayerForm, RealTeamForm,
     RealGameForm, HittingGameLogForm, PitchingGameLogForm,
-    PointSettingsForm, GenerateScheduleForm,
+    PointSettingsForm, GenerateScheduleForm, MissingGameDisputeForm,
 )
 from .scoring import (
     calc_team_weekly_points, calc_team_season_points,
@@ -813,7 +813,7 @@ def member_drop_player(request, player_id):
 def dispute_list(request):
     team = request.fantasy_team
     disputes = PendingRequest.objects.filter(
-        request_type='stat_modify', submitted_by=team
+        request_type__in=['stat_modify', 'missing_game'], submitted_by=team
     ).select_related('player__real_team', 'game', 'reviewed_by').order_by('-submitted_at')
     return render(request, 'league/disputes.html', {'disputes': disputes})
 
@@ -930,7 +930,7 @@ def cancel_dispute(request, dispute_id):
     if request.method != 'POST':
         return redirect('league:dispute_list')
     team = request.fantasy_team
-    dispute = get_object_or_404(PendingRequest, pk=dispute_id, request_type='stat_modify', submitted_by=team)
+    dispute = get_object_or_404(PendingRequest, pk=dispute_id, request_type__in=['stat_modify', 'missing_game'], submitted_by=team)
     if dispute.status != 'pending':
         messages.error(request, 'Only pending disputes can be cancelled.')
         return redirect('league:dispute_list')
@@ -944,10 +944,78 @@ def cancel_dispute(request, dispute_id):
     return redirect('league:dispute_list')
 
 
+@login_required
+def submit_missing_game_dispute(request, player_id):
+    team = request.fantasy_team
+    if team.is_commissioner:
+        messages.error(request, 'Commissioners cannot submit disputes.')
+        return redirect('league:players')
+    player = get_object_or_404(Player, pk=player_id)
+
+    stat_type = 'pitching' if player.is_pitcher else 'hitting'
+    StatFormClass = PitchingGameLogForm if player.is_pitcher else HittingGameLogForm
+
+    if request.method == 'POST':
+        form = MissingGameDisputeForm(request.POST)
+        stat_form = StatFormClass(request.POST)
+        if form.is_valid() and stat_form.is_valid():
+            date_val = form.cleaned_data['date']
+            opponent = form.cleaned_data['opponent']
+            user_message = request.POST.get('user_message', '').strip()
+
+            existing = PendingRequest.objects.filter(
+                request_type='missing_game', submitted_by=team, player=player,
+                status='pending',
+                proposed_data__date=str(date_val),
+                proposed_data__opponent=opponent,
+            ).first()
+            if existing:
+                messages.warning(request, 'You already have a pending dispute for this game.')
+                return redirect('league:dispute_list')
+
+            cd = stat_form.cleaned_data
+            if stat_type == 'hitting':
+                proposed = {
+                    'date': str(date_val), 'opponent': opponent,
+                    'ab': cd['ab'], 'runs': cd['runs'], 'hits': cd['hits'],
+                    'doubles': cd['doubles'], 'triples': cd['triples'], 'hr': cd['hr'],
+                    'rbi': cd['rbi'], 'bb': cd['bb'], 'so': cd['so'],
+                    'sb': cd['sb'], 'cs': cd['cs'], 'hbp': cd['hbp'],
+                }
+            else:
+                proposed = {
+                    'date': str(date_val), 'opponent': opponent,
+                    'outs': cd['ip'], 'hits': cd['hits'], 'runs': cd['runs'],
+                    'er': cd['er'], 'bb': cd['bb'], 'so': cd['so'], 'hr': cd['hr'],
+                    'win': cd['win'], 'loss': cd['loss'],
+                    'save_game': cd['save'],
+                }
+
+            PendingRequest.objects.create(
+                request_type='missing_game', submitted_by=team,
+                player=player, stat_type=stat_type,
+                proposed_data=proposed,
+                user_message=user_message,
+            )
+            ActivityEntry.objects.create(
+                entry_type='dispute_submitted', fantasy_team=team, player=player,
+                description=f'{team.name} reported a missing game for {player} on {date_val} vs {opponent}',
+            )
+            messages.success(request, 'Missing game dispute submitted successfully.')
+            return redirect('league:dispute_list')
+    else:
+        form = MissingGameDisputeForm()
+        stat_form = StatFormClass()
+
+    return render(request, 'league/submit_missing_game_dispute.html', {
+        'player': player, 'form': form, 'stat_form': stat_form, 'stat_type': stat_type,
+    })
+
+
 @commissioner_required
 def commissioner_disputes(request):
     disputes = PendingRequest.objects.filter(
-        request_type='stat_modify'
+        request_type__in=['stat_modify', 'missing_game']
     ).select_related('submitted_by', 'player__real_team', 'game__home_team', 'game__away_team', 'reviewed_by')
     pending_count = disputes.filter(status='pending').count()
     return render(request, 'league/commissioner/disputes.html', {
@@ -1039,6 +1107,35 @@ def review_dispute(request, dispute_id):
     })
 
 
+@commissioner_required
+def review_missing_game(request, dispute_id):
+    dispute = get_object_or_404(
+        PendingRequest.objects.select_related('player', 'submitted_by'),
+        pk=dispute_id, request_type='missing_game'
+    )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        commissioner_note = request.POST.get('commissioner_note', '').strip()
+        dispute.status = 'approved' if action == 'approve' else 'denied'
+        entry_type = 'dispute_approved' if action == 'approve' else 'dispute_denied'
+        dispute.commissioner_note = commissioner_note
+        dispute.reviewed_by = request.fantasy_team
+        dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+        dispute.save()
+        ActivityEntry.objects.create(
+            entry_type=entry_type, fantasy_team=request.fantasy_team,
+            player=dispute.player,
+            description=f'Missing game dispute by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
+        )
+        messages.success(request, f'Dispute {dispute.status}.')
+        return redirect('league:commissioner_disputes')
+
+    return render(request, 'league/commissioner/review_missing_game.html', {
+        'dispute': dispute,
+    })
+
+
 # --- Commissioner Views ---
 
 @commissioner_required
@@ -1048,7 +1145,7 @@ def commissioner_panel(request):
     real_team_count = RealTeam.objects.exclude(abbreviation='OOC').count()
     week_count = Week.objects.count()
     free_agent_count = Player.objects.filter(fantasy_team__isnull=True).count()
-    pending_disputes = PendingRequest.objects.filter(request_type='stat_modify', status='pending').count()
+    pending_disputes = PendingRequest.objects.filter(request_type__in=['stat_modify', 'missing_game'], status='pending').count()
     return render(request, 'league/commissioner/panel.html', {
         'team_count': team_count,
         'player_count': player_count,

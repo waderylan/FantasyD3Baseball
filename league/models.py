@@ -347,6 +347,7 @@ class PendingRequest(models.Model):
     REQUEST_TYPES = [
         ('game_add', 'Add Game'),
         ('stat_modify', 'Modify Stats'),
+        ('missing_game', 'Missing Game'),
     ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),

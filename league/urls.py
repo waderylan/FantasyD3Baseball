@@ -48,9 +48,11 @@ urlpatterns = [
     path('disputes/new/', views.dispute_select_player, name='dispute_select_player'),
     path('disputes/new/<int:player_id>/', views.dispute_select_game, name='dispute_select_game'),
     path('disputes/<int:player_id>/<int:game_id>/submit/', views.submit_dispute, name='submit_dispute'),
+    path('disputes/<int:player_id>/missing/', views.submit_missing_game_dispute, name='submit_missing_game_dispute'),
     path('disputes/<int:dispute_id>/cancel/', views.cancel_dispute, name='cancel_dispute'),
     path('commissioner/disputes/', views.commissioner_disputes, name='commissioner_disputes'),
     path('commissioner/disputes/<int:dispute_id>/review/', views.review_dispute, name='review_dispute'),
+    path('commissioner/disputes/<int:dispute_id>/review-missing/', views.review_missing_game, name='review_missing_game'),
 
     # Players / Free Agents (public)
     path('players/', views.players_list, name='players'),

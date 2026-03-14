@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}Review Missing Game Dispute{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">Review Missing Game Dispute</h2>
+<p class="text-muted mb-4">
+    {{ dispute.player.first_name }} {{ dispute.player.last_name }}
+    &mdash; submitted by <strong>{{ dispute.submitted_by }}</strong>
+    on {{ dispute.submitted_at|date:"M d, Y" }}
+</p>
+
+<div class="card mb-4" style="max-width: 400px;">
+    <div class="card-body">
+        <table class="table table-sm table-bordered mb-0">
+            <tr><th>Date</th><td>{{ dispute.proposed_data.date }}</td></tr>
+            <tr><th>Opponent</th><td>{{ dispute.proposed_data.opponent }}</td></tr>
+            {% if dispute.stat_type == 'hitting' %}
+            <tr><th>AB</th><td>{{ dispute.proposed_data.ab }}</td></tr>
+            <tr><th>R</th><td>{{ dispute.proposed_data.runs }}</td></tr>
+            <tr><th>H</th><td>{{ dispute.proposed_data.hits }}</td></tr>
+            <tr><th>2B</th><td>{{ dispute.proposed_data.doubles }}</td></tr>
+            <tr><th>3B</th><td>{{ dispute.proposed_data.triples }}</td></tr>
+            <tr><th>HR</th><td>{{ dispute.proposed_data.hr }}</td></tr>
+            <tr><th>RBI</th><td>{{ dispute.proposed_data.rbi }}</td></tr>
+            <tr><th>BB</th><td>{{ dispute.proposed_data.bb }}</td></tr>
+            <tr><th>SO</th><td>{{ dispute.proposed_data.so }}</td></tr>
+            <tr><th>SB</th><td>{{ dispute.proposed_data.sb }}</td></tr>
+            <tr><th>CS</th><td>{{ dispute.proposed_data.cs }}</td></tr>
+            <tr><th>HBP</th><td>{{ dispute.proposed_data.hbp }}</td></tr>
+            {% elif dispute.stat_type == 'pitching' %}
+            <tr><th>IP</th><td>{{ dispute.proposed_data.outs|ip_display }}</td></tr>
+            <tr><th>H</th><td>{{ dispute.proposed_data.hits }}</td></tr>
+            <tr><th>R</th><td>{{ dispute.proposed_data.runs }}</td></tr>
+            <tr><th>ER</th><td>{{ dispute.proposed_data.er }}</td></tr>
+            <tr><th>BB</th><td>{{ dispute.proposed_data.bb }}</td></tr>
+            <tr><th>SO</th><td>{{ dispute.proposed_data.so }}</td></tr>
+            <tr><th>HR</th><td>{{ dispute.proposed_data.hr }}</td></tr>
+            <tr><th>W</th><td>{% if dispute.proposed_data.win %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>L</th><td>{% if dispute.proposed_data.loss %}Yes{% else %}No{% endif %}</td></tr>
+            <tr><th>SV</th><td>{% if dispute.proposed_data.save_game %}Yes{% else %}No{% endif %}</td></tr>
+            {% endif %}
+        </table>
+    </div>
+</div>
+
+{% if dispute.user_message %}
+<div class="alert alert-info mb-4">
+    <strong>User message:</strong> {{ dispute.user_message }}
+</div>
+{% endif %}
+
+{% if dispute.status != 'pending' %}
+<div class="alert {% if dispute.status == 'approved' %}alert-success{% elif dispute.status == 'denied' %}alert-danger{% else %}alert-secondary{% endif %}">
+    This dispute was <strong>{{ dispute.status }}</strong>
+    {% if dispute.reviewed_by %}by {{ dispute.reviewed_by }}{% endif %}
+    {% if dispute.reviewed_at %}on {{ dispute.reviewed_at|date:"M d, Y" }}{% endif %}.
+    {% if dispute.commissioner_note %}<br><strong>Note:</strong> {{ dispute.commissioner_note }}{% endif %}
+</div>
+<a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+{% else %}
+<form method="post" style="max-width: 400px;">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label fw-bold">Commissioner Note <span class="text-muted fw-normal">(optional)</span></label>
+        <textarea name="commissioner_note" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
+        <button type="submit" name="action" value="deny" class="btn btn-danger">Deny</button>
+        <a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

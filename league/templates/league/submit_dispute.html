@@ -43,7 +43,7 @@
 
     <div class="col-md-5">
         <h6 class="text-muted mb-2">Corrected Stats</h6>
-        <form method="post">
+        <form method="post" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA')event.preventDefault();">
             {% csrf_token %}
             {% for field in form %}
             <div class="mb-2 row align-items-center">

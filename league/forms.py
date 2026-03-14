@@ -134,6 +134,11 @@ class PitchingGameLogForm(forms.Form):
         return cleaned
 
 
+class MissingGameDisputeForm(forms.Form):
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    opponent = forms.CharField(max_length=100, label='Opponent')
+
+
 class PointSettingsForm(forms.ModelForm):
     class Meta:
         model = PointSettings
