@@ -35,6 +35,8 @@
                         <span class="badge bg-danger">DISPUTE DENIED</span>
                     {% elif item.kind == 'dispute_cancelled' %}
                         <span class="badge bg-secondary">DISPUTE CANCELLED</span>
+                    {% elif item.kind == 'trade' %}
+                        <span class="badge bg-primary">TRADE</span>
                     {% endif %}
                 </td>
                 <td>

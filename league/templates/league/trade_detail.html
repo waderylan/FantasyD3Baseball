@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Trade Details{% endblock %}
+
+{% block content %}
+<h2>Trade Details</h2>
+
+<div class="mb-3">
+    <span class="badge
+        {% if trade.status == 'pending' %}bg-warning text-dark
+        {% elif trade.status == 'accepted' %}bg-success
+        {% elif trade.status == 'denied' or trade.status == 'cancelled' %}bg-danger
+        {% else %}bg-secondary{% endif %}">
+        {{ trade.get_status_display }}
+    </span>
+    <span class="text-muted small ms-2">{{ trade.created_at|date:"M j, Y g:i A" }}</span>
+</div>
+
+{% if trade.counter_to %}
+<p class="text-muted small">This is a counter-offer in response to a previous proposal.</p>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>{{ trade.sender }}</strong> gives</div>
+            <ul class="list-group list-group-flush">
+                {% for item in give_items %}
+                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-secondary">{{ item.player.position }}</span></li>
+                {% empty %}
+                <li class="list-group-item text-muted fst-italic">No players</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><strong>{{ trade.receiver }}</strong> gives</div>
+            <ul class="list-group list-group-flush">
+                {% for item in receive_items %}
+                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-secondary">{{ item.player.position }}</span></li>
+                {% empty %}
+                <li class="list-group-item text-muted fst-italic">No players</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% if trade.status == 'pending' %}
+    {% if is_sender %}
+    <form method="post" action="{% url 'league:trade_cancel' trade.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger"
+            onclick="return confirm('Cancel this trade offer?')">Cancel Trade</button>
+    </form>
+    {% endif %}
+
+    {% if is_receiver %}
+    <form method="post" action="{% url 'league:trade_respond' trade.pk %}" class="d-flex gap-2">
+        {% csrf_token %}
+        <button type="submit" name="action" value="accept" class="btn btn-success"
+            onclick="return confirm('Accept this trade? Players will be swapped immediately.')">Accept</button>
+        <button type="submit" name="action" value="amend" class="btn btn-warning">Amend</button>
+        <button type="submit" name="action" value="deny" class="btn btn-danger"
+            onclick="return confirm('Deny this trade?')">Deny</button>
+    </form>
+    {% endif %}
+{% endif %}
+
+<a href="{% url 'league:roster' request.fantasy_team.pk %}" class="btn btn-secondary mt-3">Back to Roster</a>
+{% endblock %}

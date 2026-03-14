@@ -316,6 +316,7 @@ class Transaction(models.Model):
         related_name='transactions'
     )
     timestamp = models.DateTimeField(auto_now_add=True)
+    notes = models.CharField(max_length=255, blank=True, default='')
 
     class Meta:
         ordering = ['-timestamp']
@@ -427,3 +428,42 @@ class ActivityEntry(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class Trade(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('denied', 'Denied'),
+        ('cancelled', 'Cancelled'),
+        ('amended', 'Amended'),
+    ]
+    sender = models.ForeignKey(
+        FantasyTeam, on_delete=models.CASCADE, related_name='trades_sent'
+    )
+    receiver = models.ForeignKey(
+        FantasyTeam, on_delete=models.CASCADE, related_name='trades_received'
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    counter_to = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='counters'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Trade: {self.sender} -> {self.receiver} ({self.status})"
+
+
+class TradeItem(models.Model):
+    DIRECTION_CHOICES = [('give', 'Give'), ('receive', 'Receive')]
+    trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name='items')
+    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
+    # 'give' = sender gives this player to receiver
+    # 'receive' = sender receives this player from receiver
+
+    def __str__(self):
+        return f"{self.direction}: {self.player}"

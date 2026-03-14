@@ -60,6 +60,13 @@ urlpatterns = [
     path('players/<int:player_id>/add/', views.member_add_player, name='member_add_player'),
     path('players/<int:player_id>/drop/', views.member_drop_player, name='member_drop_player'),
 
+    # Trades
+    path('trades/', views.trade_select_team, name='trade_select_team'),
+    path('trades/create/<int:team_id>/', views.trade_create, name='trade_create'),
+    path('trades/<int:trade_id>/', views.trade_detail, name='trade_detail'),
+    path('trades/<int:trade_id>/cancel/', views.trade_cancel, name='trade_cancel'),
+    path('trades/<int:trade_id>/respond/', views.trade_respond, name='trade_respond'),
+
     # Commissioner
     path('commissioner/', views.commissioner_panel, name='commissioner_panel'),
     path('commissioner/scraper/', views.run_scraper, name='run_scraper'),

@@ -7,7 +7,12 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>{{ viewed_team }}</h2>
     {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
-    <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
+    <div class="d-flex gap-2">
+        {% if not request.fantasy_team.is_commissioner %}
+        <a href="{% url 'league:trade_select_team' %}" class="btn" style="background-color:#fd7e14;color:#fff;">Trade</a>
+        {% endif %}
+        <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
+    </div>
     {% endif %}
 </div>
 
@@ -18,6 +23,21 @@
     <a href="?range=season" class="btn btn-sm {% if stat_range == 'season' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Season</a>
     {% if current_week %}<span class="text-muted small ms-2">Week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>{% endif %}
 </div>
+
+{% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+{% for trade in incoming_trades %}
+<div class="alert alert-warning d-flex justify-content-between align-items-center py-2">
+    <span>Trade request from <strong>{{ trade.sender }}</strong></span>
+    <a href="{% url 'league:trade_detail' trade.pk %}" class="btn btn-sm btn-warning">View</a>
+</div>
+{% endfor %}
+{% for trade in outgoing_trades %}
+<div class="alert alert-secondary d-flex justify-content-between align-items-center py-2">
+    <span>Pending trade with <strong>{{ trade.receiver }}</strong></span>
+    <a href="{% url 'league:trade_detail' trade.pk %}" class="btn btn-sm btn-secondary">View</a>
+</div>
+{% endfor %}
+{% endif %}
 
 {# ---- Active Lineup ---- #}
 {% with active_rows=slot_rows %}

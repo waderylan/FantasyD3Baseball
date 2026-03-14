@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}{% if counter_to %}Counter Offer{% else %}Propose Trade{% endif %}{% endblock %}
+
+{% block content %}
+<h2>{% if counter_to %}Counter Offer{% else %}Propose Trade{% endif %}</h2>
+<p class="text-muted">Trading with <strong>{{ other_team }}</strong></p>
+
+{% if counter_to %}
+<div class="alert alert-info">You are sending a counter-offer in response to a trade proposal.</div>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {% if counter_to %}<input type="hidden" name="counter_to" value="{{ counter_to.pk }}">{% endif %}
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <h5>Players You Give</h5>
+            <div id="give-container">
+                {% if prefill_give %}
+                    {% for pid in prefill_give %}
+                    <div class="trade-row mb-2 d-flex gap-2">
+                        <select name="give_players" class="form-select">
+                            <option value="">-- Select player --</option>
+                            {% for p in my_players %}
+                            <option value="{{ p.pk }}" {% if p.pk == pid %}selected{% endif %}>{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="trade-row mb-2 d-flex gap-2">
+                    <select name="give_players" class="form-select">
+                        <option value="">-- Select player --</option>
+                        {% for p in my_players %}
+                        <option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
+                </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-give">+ Add Player</button>
+        </div>
+
+        <div class="col-md-6">
+            <h5>Players You Receive</h5>
+            <div id="receive-container">
+                {% if prefill_receive %}
+                    {% for pid in prefill_receive %}
+                    <div class="trade-row mb-2 d-flex gap-2">
+                        <select name="receive_players" class="form-select">
+                            <option value="">-- Select player --</option>
+                            {% for p in their_players %}
+                            <option value="{{ p.pk }}" {% if p.pk == pid %}selected{% endif %}>{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="trade-row mb-2 d-flex gap-2">
+                    <select name="receive_players" class="form-select">
+                        <option value="">-- Select player --</option>
+                        {% for p in their_players %}
+                        <option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
+                </div>
+                {% endif %}
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-receive">+ Add Player</button>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary"
+        onclick="return confirm('Send this trade offer to {{ other_team }}?')">
+        Send Trade Offer
+    </button>
+    <a href="{% url 'league:roster' request.fantasy_team.pk %}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+
+<script>
+const giveOptions = `<option value="">-- Select player --</option>{% for p in my_players %}<option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>{% endfor %}`;
+const receiveOptions = `<option value="">-- Select player --</option>{% for p in their_players %}<option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>{% endfor %}`;
+
+function refreshOptions(containerId) {
+    const container = document.getElementById(containerId);
+    const selects = Array.from(container.querySelectorAll('select'));
+    const selected = new Set(selects.map(s => s.value).filter(v => v !== ''));
+    selects.forEach(function(sel) {
+        Array.from(sel.options).forEach(function(opt) {
+            if (opt.value === '') return;
+            const takenElsewhere = selected.has(opt.value) && opt.value !== sel.value;
+            opt.hidden = takenElsewhere;
+            opt.disabled = takenElsewhere;
+        });
+    });
+}
+
+function wireRow(row, containerId) {
+    const sel = row.querySelector('select');
+    const btn = row.querySelector('.remove-btn');
+    sel.addEventListener('change', function() { refreshOptions(containerId); });
+    btn.addEventListener('click', function() {
+        row.remove();
+        refreshOptions(containerId);
+    });
+}
+
+function makeRow(containerId, selectName, optionsHtml) {
+    const row = document.createElement('div');
+    row.className = 'trade-row mb-2 d-flex gap-2';
+    const sel = document.createElement('select');
+    sel.name = selectName;
+    sel.className = 'form-select';
+    sel.innerHTML = optionsHtml;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-outline-danger btn-sm remove-btn';
+    btn.style.whiteSpace = 'nowrap';
+    btn.textContent = 'Remove';
+    row.appendChild(sel);
+    row.appendChild(btn);
+    document.getElementById(containerId).appendChild(row);
+    wireRow(row, containerId);
+    refreshOptions(containerId);
+}
+
+// Wire up all initial rows
+document.querySelectorAll('#give-container .trade-row').forEach(r => wireRow(r, 'give-container'));
+document.querySelectorAll('#receive-container .trade-row').forEach(r => wireRow(r, 'receive-container'));
+
+// Run once on load so prefilled values hide options in sibling dropdowns
+refreshOptions('give-container');
+refreshOptions('receive-container');
+
+document.getElementById('add-give').addEventListener('click', function() {
+    makeRow('give-container', 'give_players', giveOptions);
+});
+document.getElementById('add-receive').addEventListener('click', function() {
+    makeRow('receive-container', 'receive_players', receiveOptions);
+});
+</script>
+{% endblock %}

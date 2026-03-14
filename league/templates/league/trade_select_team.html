@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Start a Trade{% endblock %}
+
+{% block content %}
+<h2>Start a Trade</h2>
+<p>Select the team you want to trade with.</p>
+
+{% if teams %}
+<div class="list-group" style="max-width: 400px;">
+    {% for t in teams %}
+    <a href="{% url 'league:trade_create' t.pk %}" class="list-group-item list-group-item-action">
+        {{ t }}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-muted">No other teams available.</p>
+{% endif %}
+
+<a href="{% url 'league:roster' request.fantasy_team.pk %}" class="btn btn-secondary mt-3">Back</a>
+{% endblock %}

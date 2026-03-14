@@ -3,6 +3,7 @@ from functools import wraps
 from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils.html import format_html
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -13,7 +14,7 @@ from .models import (
     FantasyTeam, Player, RealTeam, RealGame,
     HittingGameLog, PitchingGameLog, PointSettings,
     Week, Matchup, RosterSlot, Transaction, PendingRequest, ActivityEntry,
-    LeagueSettings,
+    LeagueSettings, Trade, TradeItem,
     PITCHING_POSITIONS, POSITION_CHOICES, SLOT_LIMITS, SLOT_ELIGIBLE, SLOT_ORDER,
 )
 from .forms import (
@@ -400,12 +401,17 @@ def roster_view(request, team_id):
     all_rostered = Player.objects.filter(fantasy_team=team).select_related('real_team')
     unslotted = [player_row(p) for p in all_rostered if p.id not in slotted_ids]
 
+    incoming_trades = list(Trade.objects.filter(receiver=team, status='pending'))
+    outgoing_trades = list(Trade.objects.filter(sender=team, status='pending'))
+
     return render(request, 'league/roster.html', {
         'viewed_team': team,
         'slot_rows': slot_rows,
         'unslotted': unslotted,
         'current_week': current_week,
         'stat_range': stat_range,
+        'incoming_trades': incoming_trades,
+        'outgoing_trades': outgoing_trades,
     })
 
 
@@ -650,15 +656,34 @@ def transaction_log(request):
     dispute_entries = ActivityEntry.objects.filter(
         entry_type__in=['dispute_submitted', 'dispute_approved', 'dispute_denied', 'dispute_cancelled']
     ).select_related('fantasy_team', 'player__real_team')
+    accepted_trades = Trade.objects.filter(status='accepted').prefetch_related(
+        'items__player__real_team'
+    ).select_related('sender', 'receiver')
 
     feed = []
     for t in add_drops:
         feed.append({'kind': t.transaction_type, 'timestamp': t.timestamp,
-                     'player': t.player, 'fantasy_team': t.fantasy_team})
+                     'player': t.player, 'fantasy_team': t.fantasy_team,
+                     'description': t.notes})
     for e in dispute_entries:
         feed.append({'kind': e.entry_type, 'timestamp': e.created_at,
                      'player': e.player, 'fantasy_team': e.fantasy_team,
                      'description': e.description})
+    for trade in accepted_trades:
+        give_names = ', '.join(
+            str(i.player) for i in trade.items.all() if i.direction == 'give'
+        ) or 'nothing'
+        receive_names = ', '.join(
+            str(i.player) for i in trade.items.all() if i.direction == 'receive'
+        ) or 'nothing'
+        feed.append({
+            'kind': 'trade',
+            'timestamp': trade.created_at,
+            'player': None,
+            'fantasy_team': trade.sender,
+            'description': f'{trade.sender} traded {give_names} to {trade.receiver} for {receive_names}',
+            'trade_id': trade.pk,
+        })
     feed.sort(key=lambda x: x['timestamp'], reverse=True)
     return render(request, 'league/transaction_log.html', {'feed': feed})
 
@@ -1256,6 +1281,176 @@ def review_missing_game(request, dispute_id):
     })
 
 
+# --- Trade Views ---
+
+@login_required
+@login_required
+def trade_select_team(request):
+    team = request.fantasy_team
+    if team.is_commissioner:
+        return redirect('league:dashboard')
+    teams = FantasyTeam.objects.filter(is_commissioner=False).exclude(pk=team.pk)
+    return render(request, 'league/trade_select_team.html', {'teams': teams})
+
+
+@login_required
+def trade_create(request, team_id):
+    my_team = request.fantasy_team
+    if my_team.is_commissioner:
+        return redirect('league:dashboard')
+    other_team = get_object_or_404(FantasyTeam, pk=team_id, is_commissioner=False)
+    if other_team == my_team:
+        return redirect('league:trade_select_team')
+
+    counter_to_id = request.GET.get('counter_to') or request.POST.get('counter_to')
+    counter_to = None
+    prefill_give = []
+    prefill_receive = []
+    if counter_to_id:
+        counter_to = Trade.objects.filter(pk=counter_to_id, status='pending', receiver=my_team).first()
+        if counter_to:
+            # pre-fill: what the original sender gave becomes our receive, and vice versa
+            prefill_give = list(counter_to.items.filter(direction='receive').values_list('player_id', flat=True))
+            prefill_receive = list(counter_to.items.filter(direction='give').values_list('player_id', flat=True))
+
+    my_players = list(Player.objects.filter(fantasy_team=my_team).order_by('last_name', 'first_name'))
+    their_players = list(Player.objects.filter(fantasy_team=other_team).order_by('last_name', 'first_name'))
+
+    if request.method == 'POST':
+        give_ids = [int(v) for v in request.POST.getlist('give_players') if v]
+        receive_ids = [int(v) for v in request.POST.getlist('receive_players') if v]
+
+        if not give_ids or not receive_ids:
+            messages.error(request, 'A trade must include at least one player on each side.')
+            return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
+
+        if len(give_ids) != len(set(give_ids)) or len(receive_ids) != len(set(receive_ids)):
+            messages.error(request, 'The same player cannot appear more than once in a trade.')
+            return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
+
+        my_player_ids = {p.id for p in my_players}
+        their_player_ids = {p.id for p in their_players}
+
+        invalid = [i for i in give_ids if i not in my_player_ids]
+        invalid += [i for i in receive_ids if i not in their_player_ids]
+        if invalid:
+            messages.error(request, 'Invalid player selection.')
+            return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
+
+        with transaction.atomic():
+            trade = Trade.objects.create(sender=my_team, receiver=other_team, counter_to=counter_to)
+            for pid in give_ids:
+                TradeItem.objects.create(trade=trade, player_id=pid, direction='give')
+            for pid in receive_ids:
+                TradeItem.objects.create(trade=trade, player_id=pid, direction='receive')
+            if counter_to:
+                counter_to.status = 'amended'
+                counter_to.save()
+
+        messages.success(request, f'Trade offer sent to {other_team}.')
+        return redirect('league:roster', team_id=my_team.pk)
+
+    return render(request, 'league/trade_create.html', {
+        'other_team': other_team,
+        'my_players': my_players,
+        'their_players': their_players,
+        'counter_to': counter_to,
+        'prefill_give': prefill_give,
+        'prefill_receive': prefill_receive,
+    })
+
+
+@login_required
+def trade_detail(request, trade_id):
+    team = request.fantasy_team
+    trade = get_object_or_404(Trade, pk=trade_id)
+    if team != trade.sender and team != trade.receiver and not team.is_commissioner:
+        messages.error(request, 'You do not have access to this trade.')
+        return redirect('league:dashboard')
+    give_items = trade.items.filter(direction='give').select_related('player__real_team')
+    receive_items = trade.items.filter(direction='receive').select_related('player__real_team')
+    return render(request, 'league/trade_detail.html', {
+        'trade': trade,
+        'give_items': give_items,
+        'receive_items': receive_items,
+        'is_sender': team == trade.sender,
+        'is_receiver': team == trade.receiver,
+    })
+
+
+@login_required
+def trade_cancel(request, trade_id):
+    team = request.fantasy_team
+    trade = get_object_or_404(Trade, pk=trade_id, sender=team, status='pending')
+    if request.method == 'POST':
+        trade.status = 'cancelled'
+        trade.save()
+        messages.success(request, 'Trade cancelled.')
+    return redirect('league:roster', team_id=team.pk)
+
+
+@login_required
+def trade_respond(request, trade_id):
+    team = request.fantasy_team
+    trade = get_object_or_404(Trade, pk=trade_id, receiver=team, status='pending')
+    if request.method != 'POST':
+        return redirect('league:trade_detail', trade_id=trade_id)
+
+    action = request.POST.get('action')
+
+    if action == 'accept':
+        if _is_locked():
+            messages.error(request, format_html(
+                'Trades can only be accepted during the transaction window. <a href="{}">View info</a>',
+                '/settings/'
+            ))
+            return redirect('league:trade_detail', trade_id=trade_id)
+        give_items = list(trade.items.filter(direction='give').select_related('player'))
+        receive_items = list(trade.items.filter(direction='receive').select_related('player'))
+        # Validate players still belong to the right teams
+        for item in give_items:
+            if item.player.fantasy_team_id != trade.sender_id:
+                messages.error(request, f'{item.player} is no longer on {trade.sender}\'s roster.')
+                return redirect('league:trade_detail', trade_id=trade_id)
+        for item in receive_items:
+            if item.player.fantasy_team_id != trade.receiver_id:
+                messages.error(request, f'{item.player} is no longer on your roster.')
+                return redirect('league:trade_detail', trade_id=trade_id)
+        with transaction.atomic():
+            for item in give_items:
+                p = item.player
+                RosterSlot.objects.filter(player=p).update(player=None)
+                p.fantasy_team = trade.receiver
+                p.fantasy_team_since = datetime.date.today()
+                p.save()
+                refresh_player_points(p)
+            for item in receive_items:
+                p = item.player
+                RosterSlot.objects.filter(player=p).update(player=None)
+                p.fantasy_team = trade.sender
+                p.fantasy_team_since = datetime.date.today()
+                p.save()
+                refresh_player_points(p)
+            trade.status = 'accepted'
+            trade.save()
+        messages.success(request, 'Trade accepted.')
+        return redirect('league:roster', team_id=team.pk)
+
+    elif action == 'deny':
+        trade.status = 'denied'
+        trade.save()
+        messages.success(request, 'Trade denied.')
+        return redirect('league:roster', team_id=team.pk)
+
+    elif action == 'amend':
+        return redirect(
+            reverse('league:trade_create', kwargs={'team_id': trade.sender_id})
+            + f'?counter_to={trade.pk}'
+        )
+
+    return redirect('league:trade_detail', trade_id=trade_id)
+
+
 # --- Commissioner Views ---
 
 @commissioner_required
@@ -1400,7 +1595,7 @@ def drop_player(request, player_id):
     if request.method == 'POST':
         prev_team = player.fantasy_team
         team_name = prev_team.name if prev_team else 'no team'
-        Transaction.objects.create(transaction_type='drop', fantasy_team=prev_team, player=player)
+        Transaction.objects.create(transaction_type='drop', fantasy_team=prev_team, player=player, notes='Removed by commissioner')
         player.fantasy_team = None
         player.fantasy_team_since = None
         player.save()
@@ -1654,7 +1849,7 @@ def assign_player(request, player_id):
             player.fantasy_team = team
             player.fantasy_team_since = datetime.date.today()
             player.save()
-            Transaction.objects.create(transaction_type='add', fantasy_team=team, player=player)
+            Transaction.objects.create(transaction_type='add', fantasy_team=team, player=player, notes='Added by commissioner')
             messages.success(request, f'{player} assigned to {team.name}.')
         else:
             messages.error(request, 'No team selected.')
