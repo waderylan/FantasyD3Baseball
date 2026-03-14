@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Lock Settings{% endblock %}
+
+{% block content %}
+<h2>Lock Settings</h2>
+
+<div class="alert {% if currently_locked %}alert-danger{% else %}alert-success{% endif %} d-flex align-items-center gap-2">
+    <strong>Teams are currently {% if currently_locked %}LOCKED{% else %}UNLOCKED{% endif %}</strong>
+    <span class="text-muted small">({{ now_et|date:"D g:i A" }} ET)</span>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            Normal Mode
+            {% if settings.normal_mode %}
+                <span class="badge bg-success">ON</span>
+            {% else %}
+                <span class="badge bg-secondary">OFF</span>
+            {% endif %}
+        </h5>
+        <p class="card-text">
+            When <strong>on</strong>, teams automatically unlock <strong>Sunday 9:01 PM – Monday 3:29 PM ET</strong>
+            and are locked all other times.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="action" value="toggle_mode" class="btn {% if settings.normal_mode %}btn-secondary{% else %}btn-success{% endif %}">
+                Turn Normal Mode {% if settings.normal_mode %}Off{% else %}On{% endif %}
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if not settings.normal_mode %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Manual Lock</h5>
+        <p class="card-text">Normal mode is off. Manually lock or unlock all teams.</p>
+        <form method="post" class="d-flex gap-2">
+            {% csrf_token %}
+            <button type="submit" name="action" value="lock_all" class="btn btn-danger" {% if settings.manual_locked %}disabled{% endif %}>
+                Lock All Teams
+            </button>
+            <button type="submit" name="action" value="unlock_all" class="btn btn-success" {% if not settings.manual_locked %}disabled{% endif %}>
+                Unlock All Teams
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Back</a>
+{% endblock %}

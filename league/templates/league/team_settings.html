@@ -54,6 +54,29 @@
     </div>
 </div>
 
+<div class="card mb-4" style="max-width: 680px;">
+    <div class="card-body">
+        <h5 class="card-title mb-3">Transaction Window</h5>
+        <p class="mb-2">
+            Status:
+            <span class="fw-bold {% if currently_locked %}text-danger{% else %}text-success{% endif %}">
+                {% if currently_locked %}Locked{% else %}Unlocked{% endif %}
+            </span>
+        </p>
+        {% if normal_mode %}
+        <p class="text-muted small mb-0">
+            Adds, drops, and lineup changes are only allowed
+            <strong>Sunday 9:01 PM through Monday 3:29 PM ET</strong>.
+            All other times are locked.
+        </p>
+        {% else %}
+        <p class="text-muted small mb-0">
+            The commissioner has manually {% if currently_locked %}locked{% else %}unlocked{% endif %} transactions.
+        </p>
+        {% endif %}
+    </div>
+</div>
+
 <div class="card" style="max-width: 680px;">
     <div class="card-body">
         <h5 class="card-title mb-3">Scoring Settings</h5>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Reset League{% endblock %}
+
+{% block content %}
+<h2 class="text-danger">Reset League</h2>
+
+<div class="alert alert-danger">
+    <strong>Warning: This cannot be undone.</strong>
+    <ul class="mb-0 mt-2">
+        <li>All fantasy teams (except the commissioner account) will be deleted</li>
+        <li>All matchups and the schedule will be deleted</li>
+        <li>All players will be set to free agents</li>
+        <li>The transaction log and activity log will be cleared</li>
+        <li>All disputes will be cleared</li>
+        <li><strong>Player stats (game logs) will NOT be affected</strong></li>
+    </ul>
+</div>
+
+<p>Type <strong>RESET</strong> in the box below to confirm.</p>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <input type="text" name="confirm" class="form-control" placeholder="Type RESET to confirm" autocomplete="off" style="max-width: 300px;">
+    </div>
+    <button type="submit" class="btn btn-danger">Reset League</button>
+    <a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary ms-2">Cancel</a>
+</form>
+{% endblock %}

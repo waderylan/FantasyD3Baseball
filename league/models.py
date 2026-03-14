@@ -383,6 +383,29 @@ class PendingRequest(models.Model):
         return f"{self.get_request_type_display()} by {self.submitted_by} ({self.status})"
 
 
+class LeagueSettings(models.Model):
+    normal_mode = models.BooleanField(
+        default=True,
+        help_text='Auto-unlock Monday 12:01 AM – 3:29 PM ET; locked all other times.'
+    )
+    manual_locked = models.BooleanField(
+        default=False,
+        help_text='Used when normal mode is off. True = all teams locked.'
+    )
+
+    class Meta:
+        verbose_name = 'League Settings'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class ActivityEntry(models.Model):
     ENTRY_TYPES = [
         ('add', 'Player Added'),

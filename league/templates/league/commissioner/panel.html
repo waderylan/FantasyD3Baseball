@@ -69,5 +69,23 @@
             </div>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Lock Settings</h5>
+                <p class="card-text">Control team transaction and lineup locks</p>
+                <a href="{% url 'league:lock_settings' %}" class="btn btn-warning">Manage Locks</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger">
+            <div class="card-body">
+                <h5 class="card-title text-danger">Reset League</h5>
+                <p class="card-text">Delete all teams, matchups, and transactions</p>
+                <a href="{% url 'league:reset_league' %}" class="btn btn-danger">Reset League</a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -81,6 +81,8 @@ urlpatterns = [
          views.edit_game_log, name='edit_game_log'),
 
     # Free Agent Board
+    path('commissioner/lock-settings/', views.lock_settings, name='lock_settings'),
+    path('commissioner/reset/', views.reset_league, name='reset_league'),
     path('commissioner/free-agents/', views.free_agent_board, name='free_agent_board'),
     path('commissioner/free-agents/<int:player_id>/assign/', views.assign_player, name='assign_player'),
     path('commissioner/players/<int:player_id>/drop/', views.drop_player, name='drop_player'),

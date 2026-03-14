@@ -3,14 +3,17 @@ from functools import wraps
 from decimal import Decimal
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.html import format_html
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Sum, Q
 
 from .models import (
     FantasyTeam, Player, RealTeam, RealGame,
     HittingGameLog, PitchingGameLog, PointSettings,
     Week, Matchup, RosterSlot, Transaction, PendingRequest, ActivityEntry,
+    LeagueSettings,
     PITCHING_POSITIONS, POSITION_CHOICES, SLOT_LIMITS, SLOT_ELIGIBLE, SLOT_ORDER,
 )
 from .forms import (
@@ -51,6 +54,32 @@ def login_required(view_func):
 
 
 _ROSTER_MAX = sum(SLOT_LIMITS.values())
+
+
+# --- Lock helper ---
+
+import zoneinfo as _zoneinfo
+
+_ET = _zoneinfo.ZoneInfo('America/New_York')
+
+
+def _is_locked():
+    """Return True if team transactions/lineup changes are currently locked.
+
+    Automatic unlock window: Sunday 9:01 PM ET through Monday 3:29 PM ET.
+    """
+    settings = LeagueSettings.load()
+    if settings.normal_mode:
+        now = datetime.datetime.now(_ET)
+        weekday = now.weekday()
+        if weekday == 6:  # Sunday — unlocked from 9:01 PM onward
+            unlock_start = now.replace(hour=21, minute=1, second=0, microsecond=0)
+            return now < unlock_start
+        if weekday == 0:  # Monday — unlocked until 3:29 PM
+            unlock_end = now.replace(hour=15, minute=29, second=59, microsecond=999999)
+            return now > unlock_end
+        return True  # locked all other days
+    return settings.manual_locked
 
 
 # --- Auth Views ---
@@ -109,7 +138,13 @@ def team_settings(request):
             messages.success(request, 'Display name updated.')
         return redirect('league:team_settings')
     ps = PointSettings.load()
-    return render(request, 'league/team_settings.html', {'team': team, 'ps': ps})
+    league_settings = LeagueSettings.load()
+    return render(request, 'league/team_settings.html', {
+        'team': team,
+        'ps': ps,
+        'currently_locked': _is_locked(),
+        'normal_mode': league_settings.normal_mode,
+    })
 
 
 def dashboard(request):
@@ -381,6 +416,12 @@ def set_lineup(request, team_id):
     if not request.fantasy_team.is_commissioner and request.fantasy_team != team:
         messages.error(request, 'You can only edit your own lineup.')
         return redirect('league:roster', team_id=team_id)
+    if not request.fantasy_team.is_commissioner and _is_locked():
+        messages.error(request, format_html(
+            'Lineup changes are currently locked. <a href="{}">View info</a>',
+            '/settings/'
+        ))
+        return redirect('league:roster', team_id=team_id)
 
     RosterSlot.create_for_team(team)
     rostered = list(Player.objects.filter(fantasy_team=team).select_related('real_team').order_by('position', 'last_name'))
@@ -421,10 +462,11 @@ def set_lineup(request, team_id):
             for e in errors:
                 messages.error(request, e)
         else:
-            for slot_type, n, pid in pending:
-                RosterSlot.objects.filter(
-                    fantasy_team=team, slot_type=slot_type, slot_number=n
-                ).update(player_id=pid)
+            with transaction.atomic():
+                for slot_type, n, pid in pending:
+                    RosterSlot.objects.filter(
+                        fantasy_team=team, slot_type=slot_type, slot_number=n
+                    ).update(player_id=pid)
             messages.success(request, 'Lineup saved.')
             return redirect('league:roster', team_id=team_id)
         return redirect('league:set_lineup', team_id=team_id)
@@ -765,6 +807,12 @@ def member_add_player(request, player_id):
     if team.is_commissioner:
         messages.error(request, 'Use the commissioner panel to manage rosters.')
         return redirect('league:players')
+    if _is_locked():
+        messages.error(request, format_html(
+            'Team transactions are currently locked. <a href="{}">View info</a>',
+            '/settings/'
+        ))
+        return redirect('league:player_detail', player_id=player_id)
     player = get_object_or_404(Player, pk=player_id)
     if player.fantasy_team is not None:
         messages.error(request, f'{player.first_name} {player.last_name} is already on a team.')
@@ -793,6 +841,12 @@ def member_drop_player(request, player_id):
     if team.is_commissioner:
         messages.error(request, 'Use the commissioner panel to manage rosters.')
         return redirect('league:players')
+    if _is_locked():
+        messages.error(request, format_html(
+            'Team transactions are currently locked. <a href="{}">View info</a>',
+            '/settings/'
+        ))
+        return redirect('league:player_detail', player_id=player_id)
     player = get_object_or_404(Player, pk=player_id)
     if player.fantasy_team != team:
         messages.error(request, 'That player is not on your roster.')
@@ -1060,23 +1114,24 @@ def review_dispute(request, dispute_id):
         if request.method == 'POST' and dispute.status == 'pending':
             action = request.POST.get('action')
             commissioner_note = request.POST.get('commissioner_note', '').strip()
-            if action == 'approve' and current_log:
-                current_log.delete()
-                refresh_player_points(dispute.player)
-                dispute.status = 'approved'
-                entry_type = 'dispute_approved'
-            else:
-                dispute.status = 'denied'
-                entry_type = 'dispute_denied'
-            dispute.commissioner_note = commissioner_note
-            dispute.reviewed_by = request.fantasy_team
-            dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
-            dispute.save()
-            ActivityEntry.objects.create(
-                entry_type=entry_type, fantasy_team=request.fantasy_team,
-                player=dispute.player,
-                description=f'Game removal request by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
-            )
+            with transaction.atomic():
+                if action == 'approve' and current_log:
+                    current_log.delete()
+                    refresh_player_points(dispute.player)
+                    dispute.status = 'approved'
+                    entry_type = 'dispute_approved'
+                else:
+                    dispute.status = 'denied'
+                    entry_type = 'dispute_denied'
+                dispute.commissioner_note = commissioner_note
+                dispute.reviewed_by = request.fantasy_team
+                dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+                dispute.save()
+                ActivityEntry.objects.create(
+                    entry_type=entry_type, fantasy_team=request.fantasy_team,
+                    player=dispute.player,
+                    description=f'Game removal request by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
+                )
             messages.success(request, f'Dispute {dispute.status}.')
             return redirect('league:commissioner_disputes')
         return render(request, 'league/commissioner/review_dispute.html', {
@@ -1115,43 +1170,54 @@ def review_dispute(request, dispute_id):
             form = FormClass(request.POST,
                              instance=current_log if dispute.stat_type == 'hitting' else None)
             if form.is_valid():
-                if dispute.stat_type == 'hitting':
-                    form.save()
-                else:
-                    cd = form.cleaned_data
-                    current_log.outs = cd['ip']
-                    current_log.hits = cd['hits']
-                    current_log.runs = cd['runs']
-                    current_log.er = cd['er']
-                    current_log.bb = cd['bb']
-                    current_log.so = cd['so']
-                    current_log.hr = cd['hr']
-                    current_log.win = cd['win']
-                    current_log.loss = cd['loss']
-                    current_log.save_game = cd['save']
-                    current_log.save()
-                refresh_player_points(dispute.player)
-                dispute.status = 'approved'
-                entry_type = 'dispute_approved'
+                with transaction.atomic():
+                    if dispute.stat_type == 'hitting':
+                        form.save()
+                    else:
+                        cd = form.cleaned_data
+                        current_log.outs = cd['ip']
+                        current_log.hits = cd['hits']
+                        current_log.runs = cd['runs']
+                        current_log.er = cd['er']
+                        current_log.bb = cd['bb']
+                        current_log.so = cd['so']
+                        current_log.hr = cd['hr']
+                        current_log.win = cd['win']
+                        current_log.loss = cd['loss']
+                        current_log.save_game = cd['save']
+                        current_log.save()
+                    refresh_player_points(dispute.player)
+                    dispute.status = 'approved'
+                    entry_type = 'dispute_approved'
+                    dispute.commissioner_note = commissioner_note
+                    dispute.reviewed_by = request.fantasy_team
+                    dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+                    dispute.save()
+                    ActivityEntry.objects.create(
+                        entry_type=entry_type, fantasy_team=request.fantasy_team,
+                        player=dispute.player,
+                        description=f'Dispute by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
+                    )
+                messages.success(request, f'Dispute {dispute.status}.')
+                return redirect('league:commissioner_disputes')
             else:
                 return render(request, 'league/commissioner/review_dispute.html', {
                     'dispute': dispute, 'current_log': current_log, 'form': form,
                 })
         else:
-            dispute.status = 'denied'
-            entry_type = 'dispute_denied'
-
-        dispute.commissioner_note = commissioner_note
-        dispute.reviewed_by = request.fantasy_team
-        dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
-        dispute.save()
-        ActivityEntry.objects.create(
-            entry_type=entry_type, fantasy_team=request.fantasy_team,
-            player=dispute.player,
-            description=f'Dispute by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
-        )
-        messages.success(request, f'Dispute {dispute.status}.')
-        return redirect('league:commissioner_disputes')
+            with transaction.atomic():
+                dispute.status = 'denied'
+                dispute.commissioner_note = commissioner_note
+                dispute.reviewed_by = request.fantasy_team
+                dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+                dispute.save()
+                ActivityEntry.objects.create(
+                    entry_type='dispute_denied', fantasy_team=request.fantasy_team,
+                    player=dispute.player,
+                    description=f'Dispute by {dispute.submitted_by} for {dispute.player} was denied',
+                )
+            messages.success(request, 'Dispute denied.')
+            return redirect('league:commissioner_disputes')
 
     form = FormClass(initial=initial)
 
@@ -1170,17 +1236,18 @@ def review_missing_game(request, dispute_id):
     if request.method == 'POST':
         action = request.POST.get('action')
         commissioner_note = request.POST.get('commissioner_note', '').strip()
-        dispute.status = 'approved' if action == 'approve' else 'denied'
-        entry_type = 'dispute_approved' if action == 'approve' else 'dispute_denied'
-        dispute.commissioner_note = commissioner_note
-        dispute.reviewed_by = request.fantasy_team
-        dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
-        dispute.save()
-        ActivityEntry.objects.create(
-            entry_type=entry_type, fantasy_team=request.fantasy_team,
-            player=dispute.player,
-            description=f'Missing game dispute by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
-        )
+        with transaction.atomic():
+            dispute.status = 'approved' if action == 'approve' else 'denied'
+            entry_type = 'dispute_approved' if action == 'approve' else 'dispute_denied'
+            dispute.commissioner_note = commissioner_note
+            dispute.reviewed_by = request.fantasy_team
+            dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+            dispute.save()
+            ActivityEntry.objects.create(
+                entry_type=entry_type, fantasy_team=request.fantasy_team,
+                player=dispute.player,
+                description=f'Missing game dispute by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
+            )
         messages.success(request, f'Dispute {dispute.status}.')
         return redirect('league:commissioner_disputes')
 
@@ -1455,6 +1522,47 @@ def generate_schedule_view(request):
         'team_count': team_count,
         'existing_weeks': existing_weeks,
     })
+
+
+@commissioner_required
+def lock_settings(request):
+    settings = LeagueSettings.load()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'toggle_mode':
+            settings.normal_mode = not settings.normal_mode
+            settings.save()
+        elif action == 'lock_all':
+            settings.manual_locked = True
+            settings.save()
+        elif action == 'unlock_all':
+            settings.manual_locked = False
+            settings.save()
+        return redirect('league:lock_settings')
+    now_et = datetime.datetime.now(_ET)
+    return render(request, 'league/commissioner/lock_settings.html', {
+        'settings': settings,
+        'currently_locked': _is_locked(),
+        'now_et': now_et,
+    })
+
+
+@commissioner_required
+def reset_league(request):
+    if request.method == 'POST':
+        if request.POST.get('confirm') != 'RESET':
+            messages.error(request, 'You must type RESET to confirm.')
+            return redirect('league:reset_league')
+        with transaction.atomic():
+            PendingRequest.objects.all().delete()
+            Transaction.objects.all().delete()
+            ActivityEntry.objects.all().delete()
+            Week.objects.all().delete()  # cascades Matchup
+            FantasyTeam.objects.filter(is_commissioner=False).delete()  # cascades RosterSlot
+            Player.objects.update(fantasy_team=None, fantasy_team_since=None)
+        messages.success(request, 'League has been reset. All teams, matchups, and transactions have been cleared.')
+        return redirect('league:commissioner_panel')
+    return render(request, 'league/commissioner/reset_league.html')
 
 
 @commissioner_required

@@ -39,6 +39,10 @@ desktop.ini
 
 # Claude
 .claude/
+CLAUDE.md
+
+# Logs
+logs/*.log
 
 # Misc
 nul
