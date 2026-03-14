@@ -17,6 +17,7 @@ from .forms import (
     LoginForm, FantasyTeamForm, PlayerForm, RealTeamForm,
     RealGameForm, HittingGameLogForm, PitchingGameLogForm,
     PointSettingsForm, GenerateScheduleForm, MissingGameDisputeForm,
+    ScrapeStatsForm,
 )
 from .scoring import (
     calc_team_weekly_points, calc_team_season_points,
@@ -1206,6 +1207,47 @@ def commissioner_panel(request):
         'free_agent_count': free_agent_count,
         'pending_disputes': pending_disputes,
     })
+
+
+@commissioner_required
+def run_scraper(request):
+    if request.method == 'POST':
+        form = ScrapeStatsForm(request.POST)
+        if form.is_valid():
+            from io import StringIO
+            from django.core.management import call_command
+            start = form.cleaned_data['start_date'].strftime('%m/%d/%Y')
+            end = form.cleaned_data['end_date'].strftime('%m/%d/%Y')
+            stdout_buf = StringIO()
+            stderr_buf = StringIO()
+            error = None
+            try:
+                call_command(
+                    'scrape_stats',
+                    start_date=start,
+                    end_date=end,
+                    stdout=stdout_buf,
+                    stderr=stderr_buf,
+                )
+            except Exception as e:
+                error = str(e)
+            return render(request, 'league/commissioner/run_scraper.html', {
+                'form': form,
+                'output': stdout_buf.getvalue(),
+                'error': error or stderr_buf.getvalue(),
+                'start': start,
+                'end': end,
+                'done': True,
+            })
+    else:
+        form = ScrapeStatsForm()
+    latest = (
+        RealGame.objects.filter(hitting_logs__isnull=False)
+        .order_by('-date')
+        .values_list('date', flat=True)
+        .first()
+    )
+    return render(request, 'league/commissioner/run_scraper.html', {'form': form, 'done': False, 'latest_date': latest})
 
 
 @commissioner_required

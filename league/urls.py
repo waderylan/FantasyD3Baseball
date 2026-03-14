@@ -62,6 +62,7 @@ urlpatterns = [
 
     # Commissioner
     path('commissioner/', views.commissioner_panel, name='commissioner_panel'),
+    path('commissioner/scraper/', views.run_scraper, name='run_scraper'),
     path('commissioner/teams/', views.manage_teams, name='manage_teams'),
     path('commissioner/teams/create/', views.team_create, name='team_create'),
     path('commissioner/teams/<int:team_id>/edit/', views.team_edit, name='team_edit'),

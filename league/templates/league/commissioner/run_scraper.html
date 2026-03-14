@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Run Stats Scraper{% endblock %}
+
+{% block content %}
+<h2>Stats Scraper</h2>
+
+{% if done %}
+    <div class="alert {% if error %}alert-danger{% else %}alert-success{% endif %}">
+        {% if error %}
+            <strong>Error:</strong> {{ error }}
+        {% else %}
+            Scraper finished for {{ start }} &ndash; {{ end }}.
+        {% endif %}
+    </div>
+
+    {% if output %}
+    <h5>Output</h5>
+    <pre style="max-height: 600px; overflow-y: auto; background: #f8f9fa; padding: 1rem; border-radius: 4px; font-size: 0.85em;">{{ output }}</pre>
+    {% endif %}
+
+    <a href="{% url 'league:run_scraper' %}" class="btn btn-secondary mt-2">Run Again</a>
+{% else %}
+    {% if latest_date %}
+    <p class="text-muted">Most recent game in database: <strong>{{ latest_date }}</strong></p>
+    {% else %}
+    <p class="text-muted">No game logs in database yet.</p>
+    {% endif %}
+
+    <div class="alert alert-warning">
+        The scraper may take 30&ndash;120 seconds depending on the date range. Do not close this tab while it runs.
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
+            {{ form.start_date }}
+            {% if form.start_date.errors %}
+                <div class="text-danger">{{ form.start_date.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+            {{ form.end_date }}
+            {% if form.end_date.errors %}
+                <div class="text-danger">{{ form.end_date.errors }}</div>
+            {% endif %}
+        </div>
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Run Scraper</button>
+        <a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary ms-2">Back</a>
+    </form>
+{% endif %}
+{% endblock %}

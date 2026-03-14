@@ -6,6 +6,19 @@ from .models import (
 )
 
 
+class ScrapeStatsForm(forms.Form):
+    start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    end_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get('start_date')
+        end = cleaned.get('end_date')
+        if start and end and end < start:
+            raise forms.ValidationError('End date must be on or after start date.')
+        return cleaned
+
+
 class LoginForm(forms.Form):
     team_name = forms.CharField(max_length=100)
     password = forms.CharField(widget=forms.PasswordInput)

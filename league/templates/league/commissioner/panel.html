@@ -11,7 +11,7 @@
             <div class="card-body">
                 <h5 class="card-title">Fantasy Teams</h5>
                 <p class="card-text">{{ team_count }} team{{ team_count|pluralize }}</p>
-                <a href="{% url 'league:manage_teams' %}" class="btn btn-primary">Manage Teams</a>
+                <a href="{% url 'league:manage_teams' %}" class="btn btn-warning">Manage Teams</a>
             </div>
         </div>
     </div>
@@ -20,7 +20,7 @@
             <div class="card-body">
                 <h5 class="card-title">Players</h5>
                 <p class="card-text">{{ player_count }} player{{ player_count|pluralize }}</p>
-                <a href="{% url 'league:manage_players' %}" class="btn btn-primary">Manage Players</a>
+                <a href="{% url 'league:manage_players' %}" class="btn btn-warning">Manage Players</a>
             </div>
         </div>
     </div>
@@ -29,7 +29,7 @@
             <div class="card-body">
                 <h5 class="card-title">Real Teams</h5>
                 <p class="card-text">{{ real_team_count }} team{{ real_team_count|pluralize }}</p>
-                <a href="{% url 'league:manage_real_teams' %}" class="btn btn-primary">Manage Real Teams</a>
+                <a href="{% url 'league:manage_real_teams' %}" class="btn btn-warning">Manage Real Teams</a>
             </div>
         </div>
     </div>
@@ -51,12 +51,21 @@
             </div>
         </div>
     </div>
-<div class="col-md-4">
+    <div class="col-md-4">
         <div class="card {% if pending_disputes %}border-warning{% endif %}">
             <div class="card-body">
                 <h5 class="card-title">Disputes</h5>
                 <p class="card-text">{{ pending_disputes }} pending dispute{{ pending_disputes|pluralize }}</p>
-                <a href="{% url 'league:commissioner_disputes' %}" class="btn {% if pending_disputes %}btn-warning{% else %}btn-outline-secondary{% endif %}">Review Disputes</a>
+                <a href="{% url 'league:commissioner_disputes' %}" class="btn btn-warning">Review Disputes</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Stats Scraper</h5>
+                <p class="card-text">Import box scores from Liberty League</p>
+                <a href="{% url 'league:run_scraper' %}" class="btn btn-warning">Run Scraper</a>
             </div>
         </div>
     </div>
