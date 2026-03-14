@@ -38,6 +38,8 @@
                 <td>
                     {% if d.request_type == 'missing_game' %}
                         <span class="badge bg-info text-dark">Missing Game</span>
+                    {% elif d.stat_type == 'remove' %}
+                        <span class="badge bg-danger">Remove Game</span>
                     {% else %}
                         <span class="badge bg-secondary">{{ d.stat_type|upper }}</span>
                     {% endif %}

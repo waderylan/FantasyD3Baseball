@@ -25,6 +25,61 @@
     {% if dispute.commissioner_note %}<br><strong>Note:</strong> {{ dispute.commissioner_note }}{% endif %}
 </div>
 <a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+
+{% elif dispute.stat_type == 'remove' %}
+
+<div class="alert alert-danger mb-4" style="max-width: 500px;">
+    <strong>Removal Request</strong> — this player is claiming the game log below should not exist.
+</div>
+
+<div class="col-md-4 mb-4">
+    <h6 class="text-muted mb-2">Game Log to Remove</h6>
+    {% if current_log %}
+    <table class="table table-sm table-bordered">
+        {% if dispute.player.is_pitcher %}
+        <tr><th>IP</th><td>{{ current_log.outs|ip_display }}</td></tr>
+        <tr><th>H</th><td>{{ current_log.hits }}</td></tr>
+        <tr><th>R</th><td>{{ current_log.runs }}</td></tr>
+        <tr><th>ER</th><td>{{ current_log.er }}</td></tr>
+        <tr><th>BB</th><td>{{ current_log.bb }}</td></tr>
+        <tr><th>SO</th><td>{{ current_log.so }}</td></tr>
+        <tr><th>HR</th><td>{{ current_log.hr }}</td></tr>
+        <tr><th>W</th><td>{% if current_log.win %}Yes{% else %}No{% endif %}</td></tr>
+        <tr><th>L</th><td>{% if current_log.loss %}Yes{% else %}No{% endif %}</td></tr>
+        <tr><th>SV</th><td>{% if current_log.save_game %}Yes{% else %}No{% endif %}</td></tr>
+        {% else %}
+        <tr><th>AB</th><td>{{ current_log.ab }}</td></tr>
+        <tr><th>R</th><td>{{ current_log.runs }}</td></tr>
+        <tr><th>H</th><td>{{ current_log.hits }}</td></tr>
+        <tr><th>2B</th><td>{{ current_log.doubles }}</td></tr>
+        <tr><th>3B</th><td>{{ current_log.triples }}</td></tr>
+        <tr><th>HR</th><td>{{ current_log.hr }}</td></tr>
+        <tr><th>RBI</th><td>{{ current_log.rbi }}</td></tr>
+        <tr><th>BB</th><td>{{ current_log.bb }}</td></tr>
+        <tr><th>SO</th><td>{{ current_log.so }}</td></tr>
+        <tr><th>SB</th><td>{{ current_log.sb }}</td></tr>
+        <tr><th>CS</th><td>{{ current_log.cs }}</td></tr>
+        <tr><th>HBP</th><td>{{ current_log.hbp }}</td></tr>
+        {% endif %}
+    </table>
+    {% else %}
+    <p class="text-muted">Game log not found (may have already been removed).</p>
+    {% endif %}
+</div>
+
+<form method="post" style="max-width: 400px;">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label fw-bold">Commissioner Note <span class="text-muted fw-normal">(optional)</span></label>
+        <textarea name="commissioner_note" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" name="action" value="approve" class="btn btn-danger">Approve &amp; Remove Game</button>
+        <button type="submit" name="action" value="deny" class="btn btn-secondary">Deny</button>
+        <a href="{% url 'league:commissioner_disputes' %}" class="btn btn-outline-secondary">Back</a>
+    </div>
+</form>
+
 {% else %}
 
 <div class="row mb-4">

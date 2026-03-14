@@ -884,6 +884,26 @@ def submit_dispute(request, player_id, game_id):
         FormClass = HittingGameLogForm
 
     if request.method == 'POST':
+        if request.POST.get('action') == 'remove_game':
+            existing_remove = PendingRequest.objects.filter(
+                request_type='stat_modify', stat_type='remove',
+                submitted_by=team, player=player, game=game, status='pending'
+            ).first()
+            if existing_remove:
+                messages.warning(request, 'You already have a pending removal request for this game.')
+                return redirect('league:dispute_list')
+            PendingRequest.objects.create(
+                request_type='stat_modify', submitted_by=team,
+                player=player, game=game, stat_type='remove',
+                user_message=request.POST.get('remove_message', '').strip(),
+            )
+            ActivityEntry.objects.create(
+                entry_type='dispute_submitted', fantasy_team=team, player=player,
+                description=f'{team.name} requested removal of {player} stats for {game}',
+            )
+            messages.success(request, 'Game removal request submitted.')
+            return redirect('league:dispute_list')
+
         form = FormClass(request.POST, instance=log if stat_type == 'hitting' else None,
                          initial=initial if stat_type == 'pitching' else None)
         if form.is_valid():
@@ -1030,6 +1050,38 @@ def review_dispute(request, dispute_id):
         PendingRequest.objects.select_related('player', 'game', 'submitted_by'),
         pk=dispute_id, request_type='stat_modify'
     )
+
+    if dispute.stat_type == 'remove':
+        if dispute.player.is_pitcher:
+            current_log = PitchingGameLog.objects.filter(player=dispute.player, game=dispute.game).first()
+        else:
+            current_log = HittingGameLog.objects.filter(player=dispute.player, game=dispute.game).first()
+        if request.method == 'POST' and dispute.status == 'pending':
+            action = request.POST.get('action')
+            commissioner_note = request.POST.get('commissioner_note', '').strip()
+            if action == 'approve' and current_log:
+                current_log.delete()
+                refresh_player_points(dispute.player)
+                dispute.status = 'approved'
+                entry_type = 'dispute_approved'
+            else:
+                dispute.status = 'denied'
+                entry_type = 'dispute_denied'
+            dispute.commissioner_note = commissioner_note
+            dispute.reviewed_by = request.fantasy_team
+            dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+            dispute.save()
+            ActivityEntry.objects.create(
+                entry_type=entry_type, fantasy_team=request.fantasy_team,
+                player=dispute.player,
+                description=f'Game removal request by {dispute.submitted_by} for {dispute.player} was {dispute.status}',
+            )
+            messages.success(request, f'Dispute {dispute.status}.')
+            return redirect('league:commissioner_disputes')
+        return render(request, 'league/commissioner/review_dispute.html', {
+            'dispute': dispute, 'current_log': current_log, 'form': None,
+        })
+
     if dispute.stat_type == 'pitching':
         current_log = get_object_or_404(PitchingGameLog, player=dispute.player, game=dispute.game)
         pd = dispute.proposed_data or {}

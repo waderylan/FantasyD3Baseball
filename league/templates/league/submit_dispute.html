@@ -8,7 +8,7 @@
 <p class="text-muted mb-4">{{ player.first_name }} {{ player.last_name }} &mdash; {{ game }}</p>
 
 <div class="row">
-    <div class="col-md-5 me-4">
+    <div class="col-md-3 me-4">
         <h6 class="text-muted mb-2">Current Stats</h6>
         {% if stat_type == 'hitting' %}
         <table class="table table-sm table-bordered">
@@ -41,17 +41,18 @@
         {% endif %}
     </div>
 
-    <div class="col-md-5">
+    <div class="col-md-3">
         <h6 class="text-muted mb-2">Corrected Stats</h6>
         <form method="post" onkeydown="if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA')event.preventDefault();">
             {% csrf_token %}
-            {% for field in form %}
-            <div class="mb-2 row align-items-center">
-                <label class="col-3 col-form-label col-form-label-sm fw-bold">{{ field.label }}</label>
-                <div class="col-9">{{ field }}</div>
-                {% if field.errors %}<div class="col-12 text-danger small">{{ field.errors }}</div>{% endif %}
-            </div>
-            {% endfor %}
+            <table class="table table-sm table-bordered">
+                {% for field in form %}
+                <tr>
+                    <th>{{ field.label }}</th>
+                    <td style="width: 80px;">{{ field }}{% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </table>
             {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
@@ -65,6 +66,19 @@
                 <button type="submit" class="btn btn-primary">Submit Dispute</button>
                 <a href="{% url 'league:player_detail' player.id %}" class="btn btn-secondary">Cancel</a>
             </div>
+        </form>
+
+        <hr class="mt-4">
+        <h6 class="text-muted mb-2">Other Options</h6>
+        <form method="post"
+              onsubmit="return confirm('Are you sure this game should not exist for {{ player.first_name }} {{ player.last_name }}? This will request that the game log be removed entirely.');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove_game">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Message <span class="text-muted fw-normal">(optional)</span></label>
+                <textarea name="remove_message" class="form-control" rows="2" placeholder="Explain why this game should not exist..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger">Game Should Not Exist</button>
         </form>
     </div>
 </div>
