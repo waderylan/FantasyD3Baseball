@@ -13,7 +13,7 @@ from django.db.models import Sum, Q
 from .models import (
     FantasyTeam, Player, RealTeam, RealGame,
     HittingGameLog, PitchingGameLog, PointSettings,
-    Week, Matchup, RosterSlot, Transaction, PendingRequest, ActivityEntry,
+    Week, Matchup, RosterSlot, WeeklyLineupSlot, Transaction, PendingRequest, ActivityEntry,
     LeagueSettings, Trade, TradeItem,
     PITCHING_POSITIONS, POSITION_CHOICES, SLOT_LIMITS, SLOT_ELIGIBLE, SLOT_ORDER,
 )
@@ -250,9 +250,19 @@ def _week_player_stats(player, start_date, end_date):
 def _matchup_team_breakdown(team, week, ps):
     """Return slot-ordered breakdown: hitter_slots, pitcher_slots, bench_hitting, bench_pitching."""
     HITTER_ORDER = {'C': 0, 'IF': 1, 'OF': 2, 'DH': 3}
-    slots = RosterSlot.objects.filter(
-        fantasy_team=team
-    ).select_related('player__real_team').order_by('slot_type', 'slot_number')
+    today = datetime.date.today()
+    use_snapshot = (
+        week.end_date < today and
+        WeeklyLineupSlot.objects.filter(fantasy_team=team, week=week).exists()
+    )
+    if use_snapshot:
+        slots_qs = WeeklyLineupSlot.objects.filter(
+            fantasy_team=team, week=week
+        ).select_related('player__real_team').order_by('slot_type', 'slot_number')
+    else:
+        slots_qs = RosterSlot.objects.filter(
+            fantasy_team=team
+        ).select_related('player__real_team').order_by('slot_type', 'slot_number')
 
     hitter_slots = []
     pitcher_slots = []
@@ -260,7 +270,7 @@ def _matchup_team_breakdown(team, week, ps):
     bench_pitching = []
     slotted_player_ids = set()
 
-    for slot in slots:
+    for slot in slots_qs:
         player = slot.player
         if player:
             pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
@@ -283,16 +293,17 @@ def _matchup_team_breakdown(team, week, ps):
 
     hitter_slots.sort(key=lambda x: HITTER_ORDER.get(x['slot_type'], 99))
 
-    # Include rostered players not assigned to any slot
-    unslotted = Player.objects.filter(fantasy_team=team).select_related('real_team').exclude(pk__in=slotted_player_ids)
-    for player in unslotted:
-        pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
-        stats = _week_player_stats(player, week.start_date, week.end_date)
-        row = {'slot_type': 'BN', 'player': player, 'points': pts, 'stats': stats}
-        if player.is_pitcher:
-            bench_pitching.append(row)
-        else:
-            bench_hitting.append(row)
+    if not use_snapshot:
+        # Include rostered players not assigned to any slot (live view only)
+        unslotted = Player.objects.filter(fantasy_team=team).select_related('real_team').exclude(pk__in=slotted_player_ids)
+        for player in unslotted:
+            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
+            stats = _week_player_stats(player, week.start_date, week.end_date)
+            row = {'slot_type': 'BN', 'player': player, 'points': pts, 'stats': stats}
+            if player.is_pitcher:
+                bench_pitching.append(row)
+            else:
+                bench_hitting.append(row)
 
     return {
         'hitter_slots': hitter_slots,
@@ -374,6 +385,19 @@ def roster_view(request, team_id):
         start_date__lte=today, end_date__gte=today
     ).first() or Week.objects.filter(end_date__lt=today).last()
 
+    all_weeks = Week.objects.order_by('start_date')
+
+    # Week selector: ?week_id= shows a past week's snapshot (read-only)
+    selected_week = None
+    is_locked_week = False
+    week_id_param = request.GET.get('week_id')
+    if week_id_param:
+        selected_week = Week.objects.filter(pk=week_id_param).first()
+        if selected_week and selected_week.end_date < today:
+            is_locked_week = True
+        else:
+            selected_week = None  # invalid or current/future week — ignore
+
     stat_range = request.GET.get('range', 'season')
     if stat_range == 'today':
         stat_start, stat_end = today, today
@@ -395,29 +419,52 @@ def roster_view(request, team_id):
             'stats': stats,
         }
 
-    # Build ordered slot list
-    slots_qs = RosterSlot.objects.filter(fantasy_team=team).select_related('player__real_team')
-    slots_by_key = {(s.slot_type, s.slot_number): s for s in slots_qs}
-    slot_rows = []
-    slotted_ids = set()
-    for slot_type, count in sorted(SLOT_LIMITS.items(), key=lambda x: SLOT_ORDER[x[0]]):
-        if slot_type == 'BN':
-            continue  # bench shown via unslotted; BN slots must not hide players
-        for n in range(1, count + 1):
-            slot = slots_by_key.get((slot_type, n))
-            if slot and slot.player:
-                slotted_ids.add(slot.player_id)
-                row = player_row(slot.player)
-            else:
-                row = None
-            slot_rows.append({'slot': slot, 'row': row})
+    if is_locked_week:
+        # Show frozen snapshot for this past week
+        snapshot_slots = list(
+            WeeklyLineupSlot.objects.filter(fantasy_team=team, week=selected_week)
+            .select_related('player__real_team')
+            .order_by('slot_type', 'slot_number')
+        )
+        slot_rows = []
+        bench_player_ids = set()
+        for snap in snapshot_slots:
+            if snap.slot_type == 'BN':
+                bench_player_ids.add(snap.player_id) if snap.player_id else None
+                continue
+            row = player_row(snap.player) if snap.player else None
+            # Wrap in a dict that mimics the live slot_rows structure
+            slot_rows.append({'slot': snap, 'row': row})
+        unslotted = []
+        for snap in snapshot_slots:
+            if snap.slot_type == 'BN' and snap.player:
+                unslotted.append(player_row(snap.player))
+        incoming_trades = []
+        outgoing_trades = []
+    else:
+        # Build ordered slot list from live RosterSlots
+        slots_qs = RosterSlot.objects.filter(fantasy_team=team).select_related('player__real_team')
+        slots_by_key = {(s.slot_type, s.slot_number): s for s in slots_qs}
+        slot_rows = []
+        slotted_ids = set()
+        for slot_type, count in sorted(SLOT_LIMITS.items(), key=lambda x: SLOT_ORDER[x[0]]):
+            if slot_type == 'BN':
+                continue  # bench shown via unslotted; BN slots must not hide players
+            for n in range(1, count + 1):
+                slot = slots_by_key.get((slot_type, n))
+                if slot and slot.player:
+                    slotted_ids.add(slot.player_id)
+                    row = player_row(slot.player)
+                else:
+                    row = None
+                slot_rows.append({'slot': slot, 'row': row})
 
-    # Players on team but not in any slot
-    all_rostered = Player.objects.filter(fantasy_team=team).select_related('real_team')
-    unslotted = [player_row(p) for p in all_rostered if p.id not in slotted_ids]
+        # Players on team but not in any slot
+        all_rostered = Player.objects.filter(fantasy_team=team).select_related('real_team')
+        unslotted = [player_row(p) for p in all_rostered if p.id not in slotted_ids]
 
-    incoming_trades = list(Trade.objects.filter(receiver=team, status='pending'))
-    outgoing_trades = list(Trade.objects.filter(sender=team, status='pending'))
+        incoming_trades = list(Trade.objects.filter(receiver=team, status='pending'))
+        outgoing_trades = list(Trade.objects.filter(sender=team, status='pending'))
 
     return render(request, 'league/roster.html', {
         'viewed_team': team,
@@ -427,6 +474,10 @@ def roster_view(request, team_id):
         'stat_range': stat_range,
         'incoming_trades': incoming_trades,
         'outgoing_trades': outgoing_trades,
+        'all_weeks': all_weeks,
+        'selected_week': selected_week,
+        'is_locked_week': is_locked_week,
+        'today': today,
     })
 
 
@@ -514,6 +565,20 @@ def set_lineup(request, team_id):
                         fantasy_team=team, slot_type=slot_type, slot_number=n,
                         defaults={'player_id': pid},
                     )
+                # Snapshot lineup for current week
+                current_week = Week.objects.filter(
+                    start_date__lte=datetime.date.today(),
+                    end_date__gte=datetime.date.today()
+                ).first()
+                if current_week:
+                    WeeklyLineupSlot.objects.filter(fantasy_team=team, week=current_week).delete()
+                    WeeklyLineupSlot.objects.bulk_create([
+                        WeeklyLineupSlot(
+                            fantasy_team=team, week=current_week,
+                            slot_type=slot_type, slot_number=n, player_id=pid
+                        )
+                        for slot_type, n, pid in pending
+                    ])
             messages.success(request, 'Lineup saved.')
             return redirect('league:roster', team_id=team_id)
         return redirect('league:set_lineup', team_id=team_id)

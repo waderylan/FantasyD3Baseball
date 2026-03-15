@@ -5,7 +5,11 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>{{ viewed_team }}</h2>
+    <h2>
+        {{ viewed_team }}
+        {% if is_locked_week %}<span class="badge bg-secondary ms-2" style="font-size:0.6em;vertical-align:middle;">Locked</span>{% endif %}
+    </h2>
+    {% if not is_locked_week %}
     {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
     <div class="d-flex gap-2">
         {% if not request.fantasy_team.is_commissioner %}
@@ -14,14 +18,35 @@
         <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
     </div>
     {% endif %}
+    {% endif %}
 </div>
+
+{% if all_weeks %}
+<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <span class="text-muted small">Week:</span>
+    {% for w in all_weeks %}
+    {% if w == current_week %}
+    <a href="{% url 'league:roster' viewed_team.id %}" class="btn btn-sm {% if not selected_week %}btn-dark{% else %}btn-outline-secondary{% endif %}">Week {{ w.week_number }} (Current)</a>
+    {% elif w.end_date < today %}
+    <a href="?week_id={{ w.pk }}" class="btn btn-sm {% if selected_week.pk == w.pk %}btn-dark{% else %}btn-outline-secondary{% endif %}">Week {{ w.week_number }}</a>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
 
 <div class="d-flex align-items-center gap-2 mb-3">
     <span class="text-muted small">Stats:</span>
+    {% if selected_week %}
+    <a href="?week_id={{ selected_week.pk }}&range=today" class="btn btn-sm {% if stat_range == 'today' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Today</a>
+    <a href="?week_id={{ selected_week.pk }}&range=week" class="btn btn-sm {% if stat_range == 'week' %}btn-dark{% else %}btn-outline-secondary{% endif %}">This Week</a>
+    <a href="?week_id={{ selected_week.pk }}&range=season" class="btn btn-sm {% if stat_range == 'season' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Season</a>
+    {% else %}
     <a href="?range=today" class="btn btn-sm {% if stat_range == 'today' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Today</a>
     <a href="?range=week" class="btn btn-sm {% if stat_range == 'week' %}btn-dark{% else %}btn-outline-secondary{% endif %}">This Week</a>
     <a href="?range=season" class="btn btn-sm {% if stat_range == 'season' %}btn-dark{% else %}btn-outline-secondary{% endif %}">Season</a>
-    {% if current_week %}<span class="text-muted small ms-2">Week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>{% endif %}
+    {% endif %}
+    {% if selected_week %}<span class="text-muted small ms-2">Week {{ selected_week.week_number }}: {{ selected_week.start_date }} &ndash; {{ selected_week.end_date }}</span>
+    {% elif current_week %}<span class="text-muted small ms-2">Week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>{% endif %}
 </div>
 
 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
@@ -59,7 +84,7 @@
                 <th class="text-end">BB</th>
                 <th class="text-end">SB</th>
                 <th class="text-end">Points</th>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -78,7 +103,7 @@
                 <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_sb|default:"0" }}</td>
                 <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
                     <form method="post" action="{% url 'league:member_drop_player' entry.row.player.id %}">
                         {% csrf_token %}
@@ -91,7 +116,7 @@
                 {% endif %}
                 {% else %}
                 <td colspan="11" class="fst-italic">Empty</td>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<td></td>{% endif %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<td></td>{% endif %}
                 {% endif %}
             </tr>
             {% endif %}
@@ -116,7 +141,7 @@
                 <th class="text-end">SO</th>
                 <th class="text-end">HR</th>
                 <th class="text-end">Points</th>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -134,7 +159,7 @@
                 <td class="text-end">{{ entry.row.stats.total_so|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_hr|default:"0" }}</td>
                 <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
                     <form method="post" action="{% url 'league:member_drop_player' entry.row.player.id %}">
                         {% csrf_token %}
@@ -147,7 +172,7 @@
                 {% endif %}
                 {% else %}
                 <td colspan="10" class="fst-italic">Empty</td>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<td></td>{% endif %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<td></td>{% endif %}
                 {% endif %}
             </tr>
             {% endif %}
@@ -166,7 +191,7 @@
                 <th>Pos</th>
                 <th>School</th>
                 <th class="text-end">Points</th>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -176,7 +201,7 @@
                 <td><span class="badge bg-{{ row.player.position|position_badge_color }}">{{ row.player.position }}</span></td>
                 <td>{{ row.player.real_team.abbreviation }}</td>
                 <td class="text-end fw-bold">{{ row.points|pts_format }}</td>
-                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
                     <form method="post" action="{% url 'league:member_drop_player' row.player.id %}">
                         {% csrf_token %}
@@ -189,7 +214,7 @@
                 {% endif %}
             </tr>
             {% empty %}
-            <tr><td colspan="{% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}5{% else %}4{% endif %}" class="text-center text-muted fst-italic">Bench is empty</td></tr>
+            <tr><td colspan="{% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}5{% else %}4{% endif %}" class="text-center text-muted fst-italic">Bench is empty</td></tr>
             {% endfor %}
         </tbody>
     </table>

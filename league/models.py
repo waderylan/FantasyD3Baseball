@@ -467,3 +467,20 @@ class TradeItem(models.Model):
 
     def __str__(self):
         return f"{self.direction}: {self.player}"
+
+
+class WeeklyLineupSlot(models.Model):
+    fantasy_team = models.ForeignKey(FantasyTeam, on_delete=models.CASCADE, related_name='weekly_slots')
+    week         = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='lineup_slots')
+    slot_type    = models.CharField(max_length=4, choices=SLOT_CHOICES)
+    slot_number  = models.PositiveSmallIntegerField()
+    player       = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = [('fantasy_team', 'week', 'slot_type', 'slot_number')]
+
+    @property
+    def slot_label(self):
+        if self.slot_type in ('C', 'DH'):
+            return self.slot_type
+        return f"{self.slot_type}{self.slot_number}"

@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db.models import Q
 from .models import (
     PointSettings, HittingGameLog, PitchingGameLog,
-    Player, FantasyTeam, Matchup, Week, RosterSlot, PITCHING_POSITIONS
+    Player, FantasyTeam, Matchup, Week, RosterSlot, WeeklyLineupSlot, PITCHING_POSITIONS
 )
 
 
@@ -70,11 +70,28 @@ def _owned_start(player, week_start):
     return week_start
 
 
-def _active_players(fantasy_team):
-    """Return players in active (non-bench) roster slots for a team."""
-    ids = RosterSlot.objects.filter(
+def _active_players(fantasy_team, week=None):
+    """Return players in active (non-bench) slots for a team.
+
+    For past weeks with a snapshot, uses WeeklyLineupSlot; otherwise falls
+    back to the live RosterSlots.
+    """
+    today = datetime.date.today()
+    if week is not None and week.end_date < today:
+        ids = WeeklyLineupSlot.objects.filter(
+            fantasy_team=fantasy_team, week=week, player__isnull=False
+        ).exclude(slot_type='BN').values_list('player_id', flat=True)
+        if ids.exists():
+            return Player.objects.filter(pk__in=ids)
+    # Current week or no snapshot yet — fall back to live RosterSlots
+    qs = RosterSlot.objects.filter(
         fantasy_team=fantasy_team, player__isnull=False
-    ).exclude(slot_type='BN').values_list('player_id', flat=True)
+    ).exclude(slot_type='BN')
+    if week is not None and week.end_date < today:
+        # Exclude players added after this week ended so past weeks aren't
+        # inflated by players who weren't rostered yet.
+        qs = qs.filter(player__fantasy_team_since__lte=week.end_date)
+    ids = qs.values_list('player_id', flat=True)
     return Player.objects.filter(pk__in=ids)
 
 
@@ -82,7 +99,7 @@ def calc_team_weekly_points(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
     total = Decimal('0')
-    for player in _active_players(fantasy_team):
+    for player in _active_players(fantasy_team, week=week):
         total += calc_player_points_for_period(player, week.start_date, week.end_date, ps)
     return total
 
@@ -101,7 +118,7 @@ def get_player_weekly_breakdown(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
     breakdown = []
-    for player in _active_players(fantasy_team):
+    for player in _active_players(fantasy_team, week=week):
         pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
         breakdown.append({'player': player, 'points': pts})
     breakdown.sort(key=lambda x: x['points'], reverse=True)
@@ -113,7 +130,7 @@ def resolve_matchup(matchup, ps=None):
         ps = PointSettings.load()
     t1_pts = calc_team_weekly_points(matchup.team_1, matchup.week, ps)
     if matchup.team_2 is None:
-        return t1_pts, Decimal('0'), matchup.team_1  # bye = auto win
+        return t1_pts, Decimal('0'), None  # bye = tie
     t2_pts = calc_team_weekly_points(matchup.team_2, matchup.week, ps)
     if t1_pts > t2_pts:
         winner = matchup.team_1
@@ -194,8 +211,8 @@ def get_standings():
         t1_pts, t2_pts, winner = resolve_matchup(matchup, ps)
 
         if matchup.team_2 is None:
-            # bye week
-            records[t1_id]['wins'] += 1
+            # bye week — counts as a tie
+            records[t1_id]['ties'] += 1
             records[t1_id]['points_for'] += t1_pts
             continue
 
