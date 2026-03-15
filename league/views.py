@@ -258,12 +258,14 @@ def _matchup_team_breakdown(team, week, ps):
     pitcher_slots = []
     bench_hitting = []
     bench_pitching = []
+    slotted_player_ids = set()
 
     for slot in slots:
         player = slot.player
         if player:
             pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
             stats = _week_player_stats(player, week.start_date, week.end_date)
+            slotted_player_ids.add(player.pk)
         else:
             pts = Decimal('0')
             stats = {}
@@ -280,6 +282,17 @@ def _matchup_team_breakdown(team, week, ps):
                 bench_hitting.append(row)
 
     hitter_slots.sort(key=lambda x: HITTER_ORDER.get(x['slot_type'], 99))
+
+    # Include rostered players not assigned to any slot
+    unslotted = Player.objects.filter(fantasy_team=team).select_related('real_team').exclude(pk__in=slotted_player_ids)
+    for player in unslotted:
+        pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
+        stats = _week_player_stats(player, week.start_date, week.end_date)
+        row = {'slot_type': 'BN', 'player': player, 'points': pts, 'stats': stats}
+        if player.is_pitcher:
+            bench_pitching.append(row)
+        else:
+            bench_hitting.append(row)
 
     return {
         'hitter_slots': hitter_slots,
@@ -388,6 +401,8 @@ def roster_view(request, team_id):
     slot_rows = []
     slotted_ids = set()
     for slot_type, count in sorted(SLOT_LIMITS.items(), key=lambda x: SLOT_ORDER[x[0]]):
+        if slot_type == 'BN':
+            continue  # bench shown via unslotted; BN slots must not hide players
         for n in range(1, count + 1):
             slot = slots_by_key.get((slot_type, n))
             if slot and slot.player:
@@ -876,18 +891,18 @@ def member_add_player(request, player_id):
             'Team transactions are currently locked. <a href="{}">View info</a>',
             '/settings/'
         ))
-        return redirect('league:player_detail', player_id=player_id)
+        return redirect('league:roster', team_id=team.pk)
     player = get_object_or_404(Player, pk=player_id)
     if player.fantasy_team is not None:
         messages.error(request, f'{player.first_name} {player.last_name} is already on a team.')
-        return redirect('league:player_detail', player_id=player_id)
+        return redirect('league:roster', team_id=team.pk)
     roster_count = Player.objects.filter(fantasy_team=team).count()
     if roster_count >= _ROSTER_MAX:
         messages.error(
             request,
             f'Your roster is full ({roster_count}/{_ROSTER_MAX}). Drop a player first.'
         )
-        return redirect('league:player_detail', player_id=player_id)
+        return redirect('league:roster', team_id=team.pk)
     player.fantasy_team = team
     player.fantasy_team_since = datetime.date.today()
     player.save()
