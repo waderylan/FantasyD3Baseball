@@ -1038,8 +1038,10 @@ def submit_dispute(request, player_id, game_id):
             messages.success(request, 'Game removal request submitted.')
             return redirect('league:dispute_list')
 
-        form = FormClass(request.POST, instance=log if stat_type == 'hitting' else None,
-                         initial=initial if stat_type == 'pitching' else None)
+        if stat_type == 'hitting':
+            form = FormClass(request.POST, instance=log)
+        else:
+            form = FormClass(request.POST, initial=initial)
         if form.is_valid():
             user_message = request.POST.get('user_message', '').strip()
             if stat_type == 'hitting':
@@ -1070,8 +1072,10 @@ def submit_dispute(request, player_id, game_id):
             messages.success(request, 'Dispute submitted successfully.')
             return redirect('league:dispute_list')
     else:
-        form = FormClass(instance=log if stat_type == 'hitting' else None,
-                         initial=initial if stat_type == 'pitching' else None)
+        if stat_type == 'hitting':
+            form = FormClass(instance=log)
+        else:
+            form = FormClass(initial=initial)
 
     return render(request, 'league/submit_dispute.html', {
         'player': player, 'game': game, 'log': log,
