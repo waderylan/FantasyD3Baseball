@@ -173,7 +173,7 @@
             {% for row in unslotted %}
             <tr>
                 <td><a href="{% url 'league:player_detail' row.player.id %}" class="text-decoration-none">{{ row.player.last_name }}, {{ row.player.first_name }}</a></td>
-                <td><span class="badge {% if row.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">{{ row.player.position }}</span></td>
+                <td><span class="badge bg-{{ row.player.position|position_badge_color }}">{{ row.player.position }}</span></td>
                 <td>{{ row.player.real_team.abbreviation }}</td>
                 <td class="text-end fw-bold">{{ row.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}

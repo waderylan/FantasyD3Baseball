@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load league_extras %}
 
 {% block title %}Free Agent Board{% endblock %}
 
@@ -134,7 +135,7 @@
                     </a>
                 </td>
                 <td>
-                    <span class="badge {% if p.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">
+                    <span class="badge bg-{{ p.position|position_badge_color }}">
                         {{ p.position }}
                     </span>
                 </td>

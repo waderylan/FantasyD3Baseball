@@ -114,7 +114,7 @@
             <tr>
                 <td>{{ pd.player.first_name }} {{ pd.player.last_name }}</td>
                 <td>
-                    <span class="badge {% if pd.player.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">
+                    <span class="badge bg-{{ pd.player.position|position_badge_color }}">
                         {{ pd.player.position }}
                     </span>
                 </td>

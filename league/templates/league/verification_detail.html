@@ -8,7 +8,7 @@
     <div>
         <h2 class="mb-1">{{ player }}</h2>
         <p class="mb-0">
-            <strong>Position:</strong> {{ player.position }} |
+            <span class="badge bg-{{ player.position|position_badge_color }}">{{ player.position }}</span> |
             <strong>Real Team:</strong> {{ player.real_team.name }}
             {% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team }}{% endif %}
         </p>

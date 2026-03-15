@@ -33,6 +33,20 @@ def pts_format(value):
         return '0.0'
 
 
+_POSITION_COLORS = {
+    'P':  'danger',   # red
+    'C':  'primary',  # blue
+    'IF': 'warning',  # orange
+    'OF': 'success',  # green
+}
+
+
+@register.filter
+def position_badge_color(position):
+    """Return the Bootstrap color name for a player position."""
+    return _POSITION_COLORS.get(position, 'secondary')
+
+
 @register.filter
 def batting_avg(hits, ab):
     """Calculate batting average."""

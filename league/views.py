@@ -439,30 +439,55 @@ def set_lineup(request, team_id):
         player_map = {p.id: p for p in rostered}
         assigned_ids = []
         errors = []
-
-        # Collect assignments
         pending = []
+
+        # Process active slots (C/IF/OF/DH/P)
         for slot_type, count in SLOT_LIMITS.items():
+            if slot_type == 'BN':
+                continue
             for n in range(1, count + 1):
                 field = f'slot_{slot_type}_{n}'
                 raw = request.POST.get(field, '').strip()
-                if raw:
-                    try:
-                        pid = int(raw)
-                    except ValueError:
-                        continue
-                    player = player_map.get(pid)
-                    if not player:
-                        errors.append(f'Unknown player for {slot_type}{n}.')
-                        continue
-                    if player.position not in SLOT_ELIGIBLE[slot_type]:
-                        errors.append(f'{player} is not eligible for the {slot_type} slot.')
-                        continue
-                    if pid in assigned_ids:
-                        errors.append(f'{player} assigned to multiple slots.')
-                        continue
-                    assigned_ids.append(pid)
-                    pending.append((slot_type, n, pid))
+                if not raw:
+                    continue
+                try:
+                    pid = int(raw)
+                except ValueError:
+                    continue
+                player = player_map.get(pid)
+                if not player:
+                    errors.append(f'Unknown player for {slot_type}{n}.')
+                    continue
+                if player.position not in SLOT_ELIGIBLE[slot_type]:
+                    errors.append(f'{player} is not eligible for the {slot_type} slot.')
+                    continue
+                if pid in assigned_ids:
+                    errors.append(f'{player} assigned to multiple slots.')
+                    continue
+                assigned_ids.append(pid)
+                pending.append((slot_type, n, pid))
+
+        # Process bench slots dynamically (variable count from form)
+        for key in request.POST:
+            if not key.startswith('slot_BN_'):
+                continue
+            raw = request.POST[key].strip()
+            if not raw:
+                continue
+            try:
+                n = int(key[len('slot_BN_'):])
+                pid = int(raw)
+            except ValueError:
+                continue
+            player = player_map.get(pid)
+            if not player:
+                errors.append('Unknown player for bench slot.')
+                continue
+            if pid in assigned_ids:
+                errors.append(f'{player} assigned to multiple slots.')
+                continue
+            assigned_ids.append(pid)
+            pending.append(('BN', n, pid))
 
         if errors:
             for e in errors:
@@ -470,24 +495,30 @@ def set_lineup(request, team_id):
         else:
             with transaction.atomic():
                 for slot_type, n, pid in pending:
-                    RosterSlot.objects.filter(
-                        fantasy_team=team, slot_type=slot_type, slot_number=n
-                    ).update(player_id=pid)
+                    RosterSlot.objects.update_or_create(
+                        fantasy_team=team, slot_type=slot_type, slot_number=n,
+                        defaults={'player_id': pid},
+                    )
             messages.success(request, 'Lineup saved.')
             return redirect('league:roster', team_id=team_id)
         return redirect('league:set_lineup', team_id=team_id)
 
-    # Build slot sections grouped by type for template
+    # Build active slot sections (C/IF/OF/DH/P only)
     slots_qs = RosterSlot.objects.filter(fantasy_team=team).select_related('player')
     slots_by_key = {(s.slot_type, s.slot_number): s for s in slots_qs}
     slot_sections = []
     section_labels = {'C': 'Catcher', 'IF': 'Infield', 'OF': 'Outfield',
-                      'DH': 'Designated Hitter', 'P': 'Pitchers', 'BN': 'Bench'}
+                      'DH': 'Designated Hitter', 'P': 'Pitchers'}
+    active_player_ids = set()
     for slot_type, count in sorted(SLOT_LIMITS.items(), key=lambda x: SLOT_ORDER[x[0]]):
+        if slot_type == 'BN':
+            continue
         eligible = [p for p in rostered if p.position in SLOT_ELIGIBLE[slot_type]]
         rows = []
         for n in range(1, count + 1):
             slot = slots_by_key.get((slot_type, n))
+            if slot and slot.player_id:
+                active_player_ids.add(slot.player_id)
             rows.append({'slot': slot, 'eligible_players': eligible})
         slot_sections.append({
             'label': section_labels[slot_type],
@@ -495,9 +526,17 @@ def set_lineup(request, team_id):
             'rows': rows,
         })
 
+    # Bench: every rostered player not in an active slot, pre-filled + one empty
+    bench_players = [p for p in rostered if p.id not in active_player_ids]
+    bench_rows = [{'n': i + 1, 'player': p} for i, p in enumerate(bench_players)]
+    bench_next_n = len(bench_rows) + 2  # number JS will use for the next dynamic slot
+
     return render(request, 'league/set_lineup.html', {
         'team': team,
         'slot_sections': slot_sections,
+        'bench_rows': bench_rows,
+        'bench_next_n': bench_next_n,
+        'rostered': rostered,
     })
 
 
@@ -1337,6 +1376,17 @@ def trade_create(request, team_id):
             messages.error(request, 'Invalid player selection.')
             return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
 
+        # Check no give player is already in another pending trade sent by this team
+        conflicting = TradeItem.objects.filter(
+            trade__sender=my_team,
+            trade__status='pending',
+            direction='give',
+            player_id__in=give_ids,
+        ).exists()
+        if conflicting:
+            messages.error(request, 'One or more of your players are already included in another pending trade you sent.')
+            return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
+
         with transaction.atomic():
             trade = Trade.objects.create(sender=my_team, receiver=other_team, counter_to=counter_to)
             for pid in give_ids:
@@ -1410,12 +1460,14 @@ def trade_respond(request, trade_id):
         # Validate players still belong to the right teams
         for item in give_items:
             if item.player.fantasy_team_id != trade.sender_id:
-                messages.error(request, f'{item.player} is no longer on {trade.sender}\'s roster.')
-                return redirect('league:trade_detail', trade_id=trade_id)
+                trade.delete()
+                messages.error(request, f'{item.player} is no longer on {trade.sender}\'s roster. The trade has been cancelled.')
+                return redirect('league:roster', team_id=team.pk)
         for item in receive_items:
             if item.player.fantasy_team_id != trade.receiver_id:
-                messages.error(request, f'{item.player} is no longer on your roster.')
-                return redirect('league:trade_detail', trade_id=trade_id)
+                trade.delete()
+                messages.error(request, f'{item.player} is no longer on your roster. The trade has been cancelled.')
+                return redirect('league:roster', team_id=team.pk)
         with transaction.atomic():
             for item in give_items:
                 p = item.player

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load league_extras %}
 
 {% block title %}Trade Details{% endblock %}
 
@@ -26,7 +27,7 @@
             <div class="card-header"><strong>{{ trade.sender }}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in give_items %}
-                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-secondary">{{ item.player.position }}</span></li>
+                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span></li>
                 {% empty %}
                 <li class="list-group-item text-muted fst-italic">No players</li>
                 {% endfor %}
@@ -38,7 +39,7 @@
             <div class="card-header"><strong>{{ trade.receiver }}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in receive_items %}
-                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-secondary">{{ item.player.position }}</span></li>
+                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span></li>
                 {% empty %}
                 <li class="list-group-item text-muted fst-italic">No players</li>
                 {% endfor %}

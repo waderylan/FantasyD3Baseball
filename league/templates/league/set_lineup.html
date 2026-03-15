@@ -11,12 +11,13 @@
     </div>
 </div>
 <p class="text-muted small mb-4">
-    Slots: 1 C &bull; 4 IF &bull; 3 OF &bull; 1 DH (any C/IF/OF) &bull; 5 P &bull; 4 Bench (any)
+    Slots: 1 C &bull; 4 IF &bull; 3 OF &bull; 1 DH (any C/IF/OF) &bull; 5 P &bull; Bench (all remaining players)
 </p>
 
 <form method="post" id="lineupForm">
     {% csrf_token %}
 
+    {# Active slots #}
     {% for section in slot_sections %}
     <h5 class="mt-4 border-bottom pb-1">{{ section.label }}</h5>
     {% for entry in section.rows %}
@@ -41,19 +42,106 @@
     {% endfor %}
     {% endfor %}
 
+    {# Bench section — pre-filled with all unslotted players + one empty #}
+    <h5 class="mt-4 border-bottom pb-1">Bench</h5>
+    <div id="bench-container">
+        {% for row in bench_rows %}
+        <div class="row align-items-center mb-2 bench-row">
+            <div class="col-auto">
+                <span class="badge bg-secondary" style="min-width:40px;text-align:center;">BN</span>
+            </div>
+            <div class="col-md-5 col-9">
+                <select name="slot_BN_{{ row.n }}" class="form-select form-select-sm player-select">
+                    <option value="">— Empty —</option>
+                    {% for player in rostered %}
+                    <option value="{{ player.id }}" {% if player.id == row.player.id %}selected{% endif %}>
+                        {{ player.last_name }}, {{ player.first_name }} ({{ player.real_team.abbreviation }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {% endfor %}
+        {# Always one empty bench slot at the bottom #}
+        <div class="row align-items-center mb-2 bench-row bench-empty">
+            <div class="col-auto">
+                <span class="badge bg-secondary" style="min-width:40px;text-align:center;">BN</span>
+            </div>
+            <div class="col-md-5 col-9">
+                <select name="slot_BN_{{ bench_rows|length|add:1 }}" class="form-select form-select-sm player-select bench-empty-select">
+                    <option value="">— Empty —</option>
+                    {% for player in rostered %}
+                    <option value="{{ player.id }}">
+                        {{ player.last_name }}, {{ player.first_name }} ({{ player.real_team.abbreviation }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
 </form>
 
 <script>
-document.querySelectorAll('select.player-select').forEach(function(sel) {
-    sel.addEventListener('change', function() {
-        if (!this.value) return;
-        const chosen = this.value;
-        document.querySelectorAll('select.player-select').forEach(function(other) {
-            if (other !== sel && other.value === chosen) {
-                other.value = '';
-            }
-        });
+let nextBN = {{ bench_next_n }};
+
+const rosterOptions = `<option value="">— Empty —</option>{% for player in rostered %}<option value="{{ player.id }}">{{ player.last_name }}, {{ player.first_name }} ({{ player.real_team.abbreviation }})</option>{% endfor %}`;
+
+function refreshEmptyBenchOptions() {
+    const emptySelect = document.querySelector('select.bench-empty-select');
+    if (!emptySelect) return;
+    const container = document.getElementById('bench-container');
+    const benchedIds = new Set(
+        Array.from(container.querySelectorAll('select'))
+            .filter(s => s !== emptySelect && s.value)
+            .map(s => s.value)
+    );
+    Array.from(emptySelect.options).forEach(function(opt) {
+        if (!opt.value) return;
+        opt.hidden = benchedIds.has(opt.value);
+        opt.disabled = benchedIds.has(opt.value);
     });
-});
+}
+
+function addEmptyBenchRow() {
+    const container = document.getElementById('bench-container');
+    const row = document.createElement('div');
+    row.className = 'row align-items-center mb-2 bench-row bench-empty';
+    row.innerHTML = `
+        <div class="col-auto">
+            <span class="badge bg-secondary" style="min-width:40px;text-align:center;">BN</span>
+        </div>
+        <div class="col-md-5 col-9">
+            <select name="slot_BN_${nextBN++}" class="form-select form-select-sm player-select bench-empty-select">
+                ${rosterOptions}
+            </select>
+        </div>`;
+    container.appendChild(row);
+    wireSelect(row.querySelector('select'));
+    refreshEmptyBenchOptions();
+}
+
+function wireSelect(sel) {
+    sel.addEventListener('change', function () {
+        if (sel.classList.contains('bench-empty-select') && sel.value) {
+            sel.classList.remove('bench-empty-select');
+            addEmptyBenchRow();
+        }
+
+        if (sel.value) {
+            const chosen = sel.value;
+            document.querySelectorAll('select.player-select').forEach(function (other) {
+                if (other !== sel && other.value === chosen) {
+                    other.value = '';
+                }
+            });
+        }
+
+        refreshEmptyBenchOptions();
+    });
+}
+
+document.querySelectorAll('select.player-select').forEach(wireSelect);
+refreshEmptyBenchOptions();
 </script>
 {% endblock %}
