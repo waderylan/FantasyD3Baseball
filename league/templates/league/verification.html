@@ -25,6 +25,9 @@
 <form method="get" class="row g-3 mb-4">
     {% if show_all %}<input type="hidden" name="show_all" value="1">{% endif %}
     <div class="col-md-3">
+        <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Search player name...">
+    </div>
+    <div class="col-md-3">
         <select name="real_team" class="form-select">
             <option value="">All Schools</option>
             {% for rt in real_teams %}
@@ -35,6 +38,7 @@
     <div class="col-md-3">
         <select name="position" class="form-select">
             <option value="">All Positions</option>
+            <option value="hitters" {% if selected_position == "hitters" %}selected{% endif %}>All Hitters</option>
             {% for code, label in position_choices %}
             <option value="{{ code }}" {% if selected_position == code %}selected{% endif %}>{{ label }}</option>
             {% endfor %}

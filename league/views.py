@@ -757,6 +757,7 @@ def players_list(request):
     position         = request.GET.get('position', '')
     fantasy_team_id  = request.GET.get('fantasy_team', '')
     show_all         = request.GET.get('show_all', '')
+    search           = request.GET.get('search', '').strip()
     sort             = request.GET.get('sort', 'season_points')
     order            = request.GET.get('order', 'desc')
     try:
@@ -768,12 +769,18 @@ def players_list(request):
 
     if real_team_id:
         players = players.filter(real_team_id=real_team_id)
-    if position:
+    if position == 'hitters':
+        players = players.exclude(position='P')
+    elif position:
         players = players.filter(position=position)
     if fantasy_team_id:
         players = players.filter(fantasy_team_id=fantasy_team_id)
     if not show_all and not fantasy_team_id:
         players = players.filter(fantasy_team__isnull=True)
+    if search:
+        players = players.filter(
+            Q(first_name__icontains=search) | Q(last_name__icontains=search)
+        )
 
     db_field = _SORT_FIELD_MAP.get(sort, 'cached_season_points')
     players = players.order_by(db_field if order == 'asc' else f'-{db_field}')
@@ -812,6 +819,7 @@ def players_list(request):
         'selected_position':    position,
         'selected_fantasy_team':fantasy_team_id,
         'show_all':             show_all,
+        'search':               search,
         'current_week':         current_week,
         'sort':                 sort,
         'order':                order,
