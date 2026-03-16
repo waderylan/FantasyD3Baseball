@@ -1,9 +1,12 @@
 from django.urls import path
-from . import views
+from . import api_views, views
 
 app_name = 'league'
 
 urlpatterns = [
+    # Ingest API (no session auth — uses Bearer token)
+    path('api/ingest/', api_views.ingest, name='ingest'),
+
     # Auth
     path('', views.login_view, name='home'),
     path('login/', views.login_view, name='login'),

@@ -3,7 +3,7 @@ from .models import FantasyTeam
 
 
 class FantasyTeamAuthMiddleware:
-    EXEMPT_PATHS = ['/login/', '/players/', '/admin/']
+    EXEMPT_PATHS = ['/login/', '/players/', '/admin/', '/api/ingest/']
 
     def __init__(self, get_response):
         self.get_response = get_response

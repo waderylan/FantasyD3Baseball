@@ -118,6 +118,11 @@ if not DEBUG:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# --- Ingest API ---
+
+INGEST_SECRET = os.environ.get('INGEST_SECRET', '')
+
+
 # --- Messages ---
 
 MESSAGE_TAGS = {
