@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Week Days — Commissioner{% endblock %}
+
+{% block content %}
+<h2>Week Days</h2>
+<p class="text-muted">Select a week to configure which days count for scoring.</p>
+
+{% if weeks %}
+<div class="list-group">
+    {% for week in weeks %}
+    <a href="{% url 'league:commissioner_week_days' week.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <span>
+            <strong>Week {{ week.week_number }}</strong>
+            <span class="text-muted ms-2">{{ week.start_date }} &ndash; {{ week.end_date }}</span>
+        </span>
+        {% with excluded_count=week.excluded_days.count %}
+        {% if excluded_count %}
+        <span class="badge bg-warning text-dark">{{ excluded_count }} day{{ excluded_count|pluralize }} excluded</span>
+        {% endif %}
+        {% endwith %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">No weeks have been generated yet.</div>
+{% endif %}
+
+<div class="mt-3">
+    <a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Back to Commissioner Panel</a>
+</div>
+{% endblock %}

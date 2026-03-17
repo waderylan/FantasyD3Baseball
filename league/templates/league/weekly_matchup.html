@@ -6,6 +6,12 @@
 {% block content %}
 <h2>{{ matchup.week }}</h2>
 
+{% if excluded_days %}
+<div class="alert alert-warning">
+  Stats from {{ excluded_days|format_excluded_dates }} are not included in this week's matchup.
+</div>
+{% endif %}
+
 <div class="row text-center mb-4">
     <div class="col-5">
         <h3>{{ matchup.team_1 }}</h3>

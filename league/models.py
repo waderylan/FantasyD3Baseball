@@ -484,3 +484,12 @@ class WeeklyLineupSlot(models.Model):
         if self.slot_type in ('C', 'DH'):
             return self.slot_type
         return f"{self.slot_type}{self.slot_number}"
+
+
+class ExcludedDay(models.Model):
+    week = models.ForeignKey(Week, on_delete=models.CASCADE, related_name='excluded_days')
+    date = models.DateField()
+
+    class Meta:
+        unique_together = ['week', 'date']
+        ordering = ['date']

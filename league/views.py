@@ -14,7 +14,7 @@ from .models import (
     FantasyTeam, Player, RealTeam, RealGame,
     HittingGameLog, PitchingGameLog, PointSettings,
     Week, Matchup, RosterSlot, WeeklyLineupSlot, Transaction, PendingRequest, ActivityEntry,
-    LeagueSettings, Trade, TradeItem,
+    LeagueSettings, Trade, TradeItem, ExcludedDay,
     PITCHING_POSITIONS, POSITION_CHOICES, SLOT_LIMITS, SLOT_ELIGIBLE, SLOT_ORDER,
 )
 from .forms import (
@@ -213,6 +213,7 @@ def weekly_matchup_view(request, week_id, matchup_id):
     t2_breakdown = []
     if matchup.team_2:
         t2_breakdown = get_player_weekly_breakdown(matchup.team_2, matchup.week, ps)
+    excluded_days = ExcludedDay.objects.filter(week=matchup.week).order_by('date')
 
     return render(request, 'league/weekly_matchup.html', {
         'matchup': matchup,
@@ -221,24 +222,31 @@ def weekly_matchup_view(request, week_id, matchup_id):
         'winner': winner,
         't1_breakdown': t1_breakdown,
         't2_breakdown': t2_breakdown,
+        'excluded_days': excluded_days,
     })
 
 
-def _week_player_stats(player, start_date, end_date):
+def _week_player_stats(player, start_date, end_date, excluded_dates=()):
     """Aggregate game log stats for a player within a date range."""
     if player.is_pitcher:
-        agg = PitchingGameLog.objects.filter(
+        qs = PitchingGameLog.objects.filter(
             player=player, game__date__gte=start_date, game__date__lte=end_date
-        ).aggregate(
+        )
+        if excluded_dates:
+            qs = qs.exclude(game__date__in=excluded_dates)
+        agg = qs.aggregate(
             total_outs=Sum('outs'), total_h=Sum('hits'), total_er=Sum('er'),
             total_bb=Sum('bb'), total_so=Sum('so'), total_hr=Sum('hr'),
             total_w=Sum('win'), total_l=Sum('loss'),
             total_sv=Sum('save_game'),
         )
     else:
-        agg = HittingGameLog.objects.filter(
+        qs = HittingGameLog.objects.filter(
             player=player, game__date__gte=start_date, game__date__lte=end_date
-        ).aggregate(
+        )
+        if excluded_dates:
+            qs = qs.exclude(game__date__in=excluded_dates)
+        agg = qs.aggregate(
             total_ab=Sum('ab'), total_h=Sum('hits'), total_2b=Sum('doubles'),
             total_3b=Sum('triples'), total_hr=Sum('hr'), total_rbi=Sum('rbi'),
             total_r=Sum('runs'), total_bb=Sum('bb'), total_so=Sum('so'),
@@ -247,7 +255,7 @@ def _week_player_stats(player, start_date, end_date):
     return {k: (v or 0) for k, v in agg.items()}
 
 
-def _matchup_team_breakdown(team, week, ps):
+def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
     """Return slot-ordered breakdown: hitter_slots, pitcher_slots, bench_hitting, bench_pitching."""
     HITTER_ORDER = {'C': 0, 'IF': 1, 'OF': 2, 'DH': 3}
     today = datetime.date.today()
@@ -273,8 +281,8 @@ def _matchup_team_breakdown(team, week, ps):
     for slot in slots_qs:
         player = slot.player
         if player:
-            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
-            stats = _week_player_stats(player, week.start_date, week.end_date)
+            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded_dates)
+            stats = _week_player_stats(player, week.start_date, week.end_date, excluded_dates=excluded_dates)
             slotted_player_ids.add(player.pk)
         else:
             pts = Decimal('0')
@@ -297,8 +305,8 @@ def _matchup_team_breakdown(team, week, ps):
         # Include rostered players not assigned to any slot (live view only)
         unslotted = Player.objects.filter(fantasy_team=team).select_related('real_team').exclude(pk__in=slotted_player_ids)
         for player in unslotted:
-            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
-            stats = _week_player_stats(player, week.start_date, week.end_date)
+            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded_dates)
+            stats = _week_player_stats(player, week.start_date, week.end_date, excluded_dates=excluded_dates)
             row = {'slot_type': 'BN', 'player': player, 'points': pts, 'stats': stats}
             if player.is_pitcher:
                 bench_pitching.append(row)
@@ -342,9 +350,11 @@ def matchup_view(request):
         return render(request, 'league/matchup.html', {'no_week': True, 'current_week': current_week})
 
     ps = PointSettings.load()
+    excluded_dates = list(ExcludedDay.objects.filter(week=matchup.week).values_list('date', flat=True))
+    excluded_days = ExcludedDay.objects.filter(week=matchup.week).order_by('date')
     t1_pts, t2_pts, winner = resolve_matchup(matchup, ps)
-    t1_breakdown = _matchup_team_breakdown(matchup.team_1, matchup.week, ps)
-    t2_breakdown = _matchup_team_breakdown(matchup.team_2, matchup.week, ps) if matchup.team_2 else []
+    t1_breakdown = _matchup_team_breakdown(matchup.team_1, matchup.week, ps, excluded_dates=excluded_dates)
+    t2_breakdown = _matchup_team_breakdown(matchup.team_2, matchup.week, ps, excluded_dates=excluded_dates) if matchup.team_2 else []
 
     return render(request, 'league/matchup.html', {
         'matchup': matchup,
@@ -355,6 +365,7 @@ def matchup_view(request):
         'winner': winner,
         't1_breakdown': t1_breakdown,
         't2_breakdown': t2_breakdown,
+        'excluded_days': excluded_days,
     })
 
 
@@ -2052,4 +2063,67 @@ def edit_game_log(request, log_type, log_id):
         'form': form,
         'log': log,
         'log_type': log_type,
+    })
+
+
+@commissioner_required
+def commissioner_week_list(request):
+    weeks = Week.objects.all().order_by('week_number')
+    return render(request, 'league/commissioner/week_list.html', {'weeks': weeks})
+
+
+@commissioner_required
+def commissioner_week_days(request, week_id):
+    week = get_object_or_404(Week, pk=week_id)
+
+    # Build the list of all 7 days in this week
+    all_dates = [week.start_date + datetime.timedelta(days=i) for i in range(7)]
+
+    # Dates that have any game logs (informational)
+    dates_with_logs = set(
+        RealGame.objects.filter(
+            date__gte=week.start_date, date__lte=week.end_date
+        ).filter(
+            Q(hitting_logs__isnull=False) | Q(pitching_logs__isnull=False)
+        ).values_list('date', flat=True)
+    )
+
+    if request.method == 'POST':
+        # Checked boxes = active (not excluded); unchecked = excluded
+        active_dates = set()
+        for d in all_dates:
+            key = d.strftime('%Y-%m-%d')
+            if request.POST.get(key):
+                active_dates.add(d)
+
+        excluded_dates = [d for d in all_dates if d not in active_dates]
+
+        ExcludedDay.objects.filter(week=week).delete()
+        for d in excluded_dates:
+            ExcludedDay.objects.create(week=week, date=d)
+
+        # Refresh points for all affected players
+        affected_players = Player.objects.filter(
+            Q(hitting_logs__game__date__gte=week.start_date, hitting_logs__game__date__lte=week.end_date) |
+            Q(pitching_logs__game__date__gte=week.start_date, pitching_logs__game__date__lte=week.end_date)
+        ).distinct()
+        for player in affected_players:
+            refresh_player_points(player)
+
+        messages.success(request, f'Week {week.week_number} active days updated.')
+        return redirect('league:commissioner_week_days', week_id=week.pk)
+
+    current_excluded = set(ExcludedDay.objects.filter(week=week).values_list('date', flat=True))
+    day_rows = []
+    for d in all_dates:
+        day_rows.append({
+            'date': d,
+            'key': d.strftime('%Y-%m-%d'),
+            'active': d not in current_excluded,
+            'has_logs': d in dates_with_logs,
+        })
+
+    return render(request, 'league/commissioner/week_days.html', {
+        'week': week,
+        'day_rows': day_rows,
     })

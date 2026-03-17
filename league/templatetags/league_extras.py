@@ -57,3 +57,9 @@ def batting_avg(hits, ab):
         return f".{int(avg * 1000):03d}"
     except (TypeError, ValueError, ZeroDivisionError):
         return '.000'
+
+
+@register.filter
+def format_excluded_dates(excluded_days):
+    """Format a queryset of ExcludedDay objects as 'Mar 12, Mar 13'."""
+    return ", ".join(d.date.strftime("%b ") + str(d.date.day) for d in excluded_days)

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Week {{ week.week_number }} Active Days — Commissioner{% endblock %}
+
+{% block content %}
+<h2>Week {{ week.week_number }} Active Days</h2>
+<p class="text-muted">{{ week.start_date }} &ndash; {{ week.end_date }}</p>
+
+<p>Check the days that should <strong>count</strong> for scoring. Uncheck days to exclude them. Saving will immediately recalculate all affected player points.</p>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="list-group mb-3">
+        {% for row in day_rows %}
+        <label class="list-group-item d-flex align-items-center gap-3">
+            <input type="checkbox" name="{{ row.key }}" class="form-check-input" {% if row.active %}checked{% endif %}>
+            <span>
+                {{ row.date|date:"l, N j" }}
+                {% if row.has_logs %}
+                <span class="badge bg-secondary ms-2">has game logs</span>
+                {% endif %}
+            </span>
+        </label>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-warning">Save Active Days</button>
+    <a href="{% url 'league:commissioner_week_list' %}" class="btn btn-secondary ms-2">Back</a>
+</form>
+{% endblock %}

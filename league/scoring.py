@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db.models import Q
 from .models import (
     PointSettings, HittingGameLog, PitchingGameLog,
-    Player, FantasyTeam, Matchup, Week, RosterSlot, WeeklyLineupSlot, PITCHING_POSITIONS
+    Player, FantasyTeam, Matchup, Week, RosterSlot, WeeklyLineupSlot, ExcludedDay, PITCHING_POSITIONS
 )
 
 
@@ -40,7 +40,7 @@ def calc_pitching_points(log, ps):
     return pts
 
 
-def calc_player_points_for_period(player, start_date, end_date, ps=None):
+def calc_player_points_for_period(player, start_date, end_date, ps=None, excluded_dates=()):
     if ps is None:
         ps = PointSettings.load()
     total = Decimal('0')
@@ -50,6 +50,8 @@ def calc_player_points_for_period(player, start_date, end_date, ps=None):
             game__date__gte=start_date,
             game__date__lte=end_date
         )
+        if excluded_dates:
+            logs = logs.exclude(game__date__in=excluded_dates)
         for log in logs:
             total += calc_pitching_points(log, ps)
     else:
@@ -58,6 +60,8 @@ def calc_player_points_for_period(player, start_date, end_date, ps=None):
             game__date__gte=start_date,
             game__date__lte=end_date
         )
+        if excluded_dates:
+            logs = logs.exclude(game__date__in=excluded_dates)
         for log in logs:
             total += calc_hitting_points(log, ps)
     return total
@@ -98,9 +102,10 @@ def _active_players(fantasy_team, week=None):
 def calc_team_weekly_points(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
+    excluded = list(ExcludedDay.objects.filter(week=week).values_list('date', flat=True))
     total = Decimal('0')
     for player in _active_players(fantasy_team, week=week):
-        total += calc_player_points_for_period(player, week.start_date, week.end_date, ps)
+        total += calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded)
     return total
 
 
@@ -117,9 +122,10 @@ def calc_team_season_points(fantasy_team, ps=None):
 def get_player_weekly_breakdown(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
+    excluded = list(ExcludedDay.objects.filter(week=week).values_list('date', flat=True))
     breakdown = []
     for player in _active_players(fantasy_team, week=week):
-        pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps)
+        pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded)
         breakdown.append({'player': player, 'points': pts})
     breakdown.sort(key=lambda x: x['points'], reverse=True)
     return breakdown
@@ -157,7 +163,8 @@ def refresh_player_points(player, current_week=None, ps=None):
     season_pts = Decimal('0')
     weekly_pts = Decimal('0')
     for w in Week.objects.all():
-        pts = calc_player_points_for_period(player, w.start_date, w.end_date, ps)
+        excluded = list(ExcludedDay.objects.filter(week=w).values_list('date', flat=True))
+        pts = calc_player_points_for_period(player, w.start_date, w.end_date, ps, excluded_dates=excluded)
         season_pts += pts
         if current_week and w.pk == current_week.pk:
             weekly_pts = pts
