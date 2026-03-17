@@ -13,6 +13,19 @@
     <h4 class="mb-0">Week {{ current_week.week_number }}
         <span class="text-muted fs-6 fw-normal">{{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>
     </h4>
+    {% if back_url %}
+    <div class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 text-muted small">Matchup:</label>
+        <select class="form-select form-select-sm" style="min-width:260px" onchange="if(this.value) window.location=this.value">
+            {% for m in all_matchups %}
+            <option value="{% url 'league:weekly_matchup' current_week.id m.id %}" {% if m.id == matchup.id %}selected{% endif %}>
+                {{ m.team_1 }} vs {% if m.team_2 %}{{ m.team_2 }}{% else %}BYE{% endif %}
+            </option>
+            {% endfor %}
+        </select>
+        <a href="{{ back_url }}" class="btn btn-sm btn-outline-secondary">Back to Schedule</a>
+    </div>
+    {% else %}
     <form method="get" class="d-flex align-items-center gap-2">
         <label class="form-label mb-0 text-muted small">Matchup:</label>
         <select name="matchup_id" class="form-select form-select-sm" style="min-width:260px" onchange="this.form.submit()">
@@ -23,6 +36,7 @@
             {% endfor %}
         </select>
     </form>
+    {% endif %}
 </div>
 
 {% if excluded_days %}

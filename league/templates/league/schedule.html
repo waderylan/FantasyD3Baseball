@@ -16,10 +16,10 @@
         <table class="table table-sm mb-0">
             <thead>
                 <tr>
-                    <th>Team 1</th>
-                    <th class="text-center">Score</th>
-                    <th>Team 2</th>
-                    <th></th>
+                    <th style="width:38%">Team 1</th>
+                    <th class="text-center" style="width:14%">Score</th>
+                    <th style="width:38%">Team 2</th>
+                    <th style="width:10%"></th>
                 </tr>
             </thead>
             <tbody>
@@ -34,7 +34,7 @@
                     <td class="{% if md.winner == md.matchup.team_2 %}fw-bold{% endif %}">
                         {% if md.matchup.team_2 %}{{ md.matchup.team_2 }}{% else %}<em>BYE</em>{% endif %}
                     </td>
-                    <td>
+                    <td class="text-center">
                         <a href="{% url 'league:weekly_matchup' wd.week.id md.matchup.id %}" class="btn btn-sm btn-outline-primary">Details</a>
                     </td>
                 </tr>

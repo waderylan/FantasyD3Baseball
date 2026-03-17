@@ -208,21 +208,23 @@ def weekly_matchup_view(request, week_id, matchup_id):
         pk=matchup_id
     )
     ps = PointSettings.load()
-    t1_pts, t2_pts, winner = resolve_matchup(matchup, ps)
-    t1_breakdown = get_player_weekly_breakdown(matchup.team_1, matchup.week, ps)
-    t2_breakdown = []
-    if matchup.team_2:
-        t2_breakdown = get_player_weekly_breakdown(matchup.team_2, matchup.week, ps)
+    excluded_dates = list(ExcludedDay.objects.filter(week=matchup.week).values_list('date', flat=True))
     excluded_days = ExcludedDay.objects.filter(week=matchup.week).order_by('date')
+    t1_pts, t2_pts, winner = resolve_matchup(matchup, ps)
+    t1_breakdown = _matchup_team_breakdown(matchup.team_1, matchup.week, ps, excluded_dates=excluded_dates)
+    t2_breakdown = _matchup_team_breakdown(matchup.team_2, matchup.week, ps, excluded_dates=excluded_dates) if matchup.team_2 else []
 
-    return render(request, 'league/weekly_matchup.html', {
+    return render(request, 'league/matchup.html', {
         'matchup': matchup,
+        'current_week': matchup.week,
+        'all_matchups': Matchup.objects.filter(week=matchup.week).select_related('team_1', 'team_2'),
         't1_pts': t1_pts,
         't2_pts': t2_pts,
         'winner': winner,
         't1_breakdown': t1_breakdown,
         't2_breakdown': t2_breakdown,
         'excluded_days': excluded_days,
+        'back_url': reverse('league:schedule'),
     })
 
 
