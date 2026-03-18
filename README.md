@@ -1,5 +1,7 @@
 # Fantasy D3 Baseball
 
+**Live site: [rylanwwade.pythonanywhere.com](https://rylanwwade.pythonanywhere.com/)**
+
 This is a full-stack fantasy baseball web app built specifically for a league that drafts players from D3 college baseball programs. It runs on Django with a SQLite database and uses Bootstrap for the frontend. Stats are pulled automatically using a custom scraper built on Playwright and BeautifulSoup. The commissioner can also enter or correct stats manually through the web interface.
 
 ## What it does
@@ -100,3 +102,4 @@ The ingest endpoint is idempotent. Sending the same data twice will not create d
 - Standard Django templating (no JavaScript framework)
 - Playwright and BeautifulSoup for the stat scraper
 - pdfplumber for PDF box score parsing
+- PythonAnywhere (hosting)
