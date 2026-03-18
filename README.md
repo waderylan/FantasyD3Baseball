@@ -57,6 +57,41 @@ Points are calculated live from the raw game logs every time they are needed. Th
 
 If a member believes their player's stats were entered incorrectly, they can file a dispute. They search for the player, pick the specific game, fill out what they think the correct stats should be along with an optional message, and submit. The commissioner sees pending disputes on their panel and can pull up a side-by-side view of the current stats versus the proposed stats, edit the proposed stats if needed, approve and apply them, or deny the request. All dispute activity is recorded in the activity log.
 
+## Sending stats to the hosted server
+
+The scraper writes stats directly to the local SQLite database. Because the hosted server does not have Playwright installed, the scraper cannot run there. Instead, you run the scraper locally and then use the export_stats command to send the results to the server over HTTP.
+
+The workflow is two commands: scrape first, then export. They can be chained:
+
+```
+uv run python manage.py scrape_stats --start-date 03/10/2026 --end-date 03/16/2026 && \
+uv run python manage.py export_stats --start-date 03/10/2026 --end-date 03/16/2026 \
+  --send --url https://yourdomain.com --secret <token>
+```
+
+The export_stats command queries the local database for all games in the given date range and builds a JSON payload matching the server's ingest API format. Without --send it prints the JSON to stdout, which is useful for inspection:
+
+```
+uv run python manage.py export_stats --start-date 03/10/2026 --end-date 03/16/2026
+```
+
+With --send it POSTs the payload to the server's /api/ingest/ endpoint. The --url and --secret arguments can be omitted if you set the INGEST_URL and INGEST_SECRET environment variables instead, which saves typing when running the command repeatedly:
+
+```
+export INGEST_URL=https://yourdomain.com
+export INGEST_SECRET=<token>
+uv run python manage.py export_stats --start-date 03/10/2026 --end-date 03/16/2026 --send
+```
+
+To preview the full request before sending, add --dry-run alongside --send. This prints the target URL, the masked auth token, and the formatted payload without making any network request:
+
+```
+uv run python manage.py export_stats --start-date 03/10/2026 --end-date 03/16/2026 \
+  --send --url https://yourdomain.com --secret <token> --dry-run
+```
+
+The ingest endpoint is idempotent. Sending the same data twice will not create duplicate game logs — games are matched by source URL, and existing logs are overwritten rather than duplicated. The server returns a list of warnings in the response for any players or teams it could not match, which the command prints after a successful import.
+
 ## Tech stack
 
 - Django 4.x
