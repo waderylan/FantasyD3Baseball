@@ -83,6 +83,42 @@ def _is_locked():
     return settings.manual_locked
 
 
+def _is_sunday_unlock_window():
+    """Return True if it's Sunday at or after 9:01 PM ET.
+
+    Changes made during this window belong to the next week, not the current one.
+    """
+    settings = LeagueSettings.load()
+    if not settings.normal_mode:
+        return False
+    now = datetime.datetime.now(_ET)
+    if now.weekday() == 6:
+        unlock_start = now.replace(hour=21, minute=1, second=0, microsecond=0)
+        return now >= unlock_start
+    return False
+
+
+def _ensure_week_snapshot(team, week):
+    """If no lineup snapshot exists for this team+week, create one from live roster slots.
+
+    Called before drops/trades so the current week's roster is preserved even
+    if the player is about to leave the team.
+    """
+    if WeeklyLineupSlot.objects.filter(fantasy_team=team, week=week).exists():
+        return
+    slots = RosterSlot.objects.filter(fantasy_team=team, player__isnull=False)
+    WeeklyLineupSlot.objects.bulk_create([
+        WeeklyLineupSlot(
+            fantasy_team=team,
+            week=week,
+            slot_type=slot.slot_type,
+            slot_number=slot.slot_number,
+            player=slot.player,
+        )
+        for slot in slots
+    ])
+
+
 # --- Auth Views ---
 
 def login_view(request):
@@ -578,16 +614,23 @@ def set_lineup(request, team_id):
                         fantasy_team=team, slot_type=slot_type, slot_number=n,
                         defaults={'player_id': pid},
                     )
-                # Snapshot lineup for current week
-                current_week = Week.objects.filter(
-                    start_date__lte=datetime.date.today(),
-                    end_date__gte=datetime.date.today()
-                ).first()
-                if current_week:
-                    WeeklyLineupSlot.objects.filter(fantasy_team=team, week=current_week).delete()
+                # Snapshot lineup for the appropriate week.
+                # If it's the Sunday PM unlock window, snapshot to next week
+                # so the current (ending) week's roster is preserved.
+                today = datetime.date.today()
+                if _is_sunday_unlock_window():
+                    snapshot_week = Week.objects.filter(
+                        start_date=today + datetime.timedelta(days=1)
+                    ).first()
+                else:
+                    snapshot_week = Week.objects.filter(
+                        start_date__lte=today, end_date__gte=today
+                    ).first()
+                if snapshot_week:
+                    WeeklyLineupSlot.objects.filter(fantasy_team=team, week=snapshot_week).delete()
                     WeeklyLineupSlot.objects.bulk_create([
                         WeeklyLineupSlot(
-                            fantasy_team=team, week=current_week,
+                            fantasy_team=team, week=snapshot_week,
                             slot_type=slot_type, slot_number=n, player_id=pid
                         )
                         for slot_type, n, pid in pending
@@ -990,7 +1033,12 @@ def member_add_player(request, player_id):
         )
         return redirect('league:roster', team_id=team.pk)
     player.fantasy_team = team
-    player.fantasy_team_since = datetime.date.today()
+    # If it's the Sunday PM unlock window, attribute the add to next Monday
+    # so it doesn't affect the current week's scoring.
+    if _is_sunday_unlock_window():
+        player.fantasy_team_since = datetime.date.today() + datetime.timedelta(days=1)
+    else:
+        player.fantasy_team_since = datetime.date.today()
     player.save()
     Transaction.objects.create(transaction_type='add', fantasy_team=team, player=player)
     refresh_player_points(player)
@@ -1016,6 +1064,12 @@ def member_drop_player(request, player_id):
     if player.fantasy_team != team:
         messages.error(request, 'That player is not on your roster.')
         return redirect('league:player_detail', player_id=player_id)
+    # Snapshot current week's roster before the drop so the dropped player's
+    # stats still count for this week even if no lineup was saved yet.
+    today = datetime.date.today()
+    current_week = Week.objects.filter(start_date__lte=today, end_date__gte=today).first()
+    if current_week:
+        _ensure_week_snapshot(team, current_week)
     Transaction.objects.create(transaction_type='drop', fantasy_team=team, player=player)
     # Remove from any roster slot
     RosterSlot.objects.filter(fantasy_team=team, player=player).update(player=None)
@@ -1573,19 +1627,30 @@ def trade_respond(request, trade_id):
                 trade.delete()
                 messages.error(request, f'{item.player} is no longer on your roster. The trade has been cancelled.')
                 return redirect('league:roster', team_id=team.pk)
+        today = datetime.date.today()
+        current_week = Week.objects.filter(start_date__lte=today, end_date__gte=today).first()
+        # Snapshot both rosters before the trade so this week's stats are preserved.
+        if current_week:
+            _ensure_week_snapshot(trade.sender, current_week)
+            _ensure_week_snapshot(trade.receiver, current_week)
+        # If it's the Sunday PM unlock window, attribute players to next Monday.
+        if _is_sunday_unlock_window():
+            new_since = today + datetime.timedelta(days=1)
+        else:
+            new_since = today
         with transaction.atomic():
             for item in give_items:
                 p = item.player
                 RosterSlot.objects.filter(player=p).update(player=None)
                 p.fantasy_team = trade.receiver
-                p.fantasy_team_since = datetime.date.today()
+                p.fantasy_team_since = new_since
                 p.save()
                 refresh_player_points(p)
             for item in receive_items:
                 p = item.player
                 RosterSlot.objects.filter(player=p).update(player=None)
                 p.fantasy_team = trade.sender
-                p.fantasy_team_since = datetime.date.today()
+                p.fantasy_team_since = new_since
                 p.save()
                 refresh_player_points(p)
             trade.status = 'accepted'
