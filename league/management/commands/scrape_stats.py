@@ -148,6 +148,7 @@ def _parse_name(raw):
     """
     raw = str(raw or '').strip()
     raw = re.sub(r'\s*[\(\[#].*$', '', raw).strip()
+    raw = re.sub(r'\s+(?:jr\.?|sr\.?|ii+|iv|vi?)$', '', raw, flags=re.I).strip()
     if not raw:
         return None, None
     if ',' in raw:
@@ -313,6 +314,28 @@ def _match_player(first, last, real_team):
         global_qs = Player.objects.filter(last_name__iexact=last, first_name__istartswith=first[0])
         if global_qs.count() == 1:
             return global_qs.first()
+
+    # Suffix fallback: retry tiers 1-3 stripping known suffixes from last name
+    # (handles players whose DB last_name includes III/IV/Jr. but box score omits it,
+    #  or vice-versa — _parse_name already strips from the scraped side)
+    _SUFFIX_RE = re.compile(r'\s+(?:jr\.?|sr\.?|ii+|iv|vi?)$', re.I)
+    last_stripped = _SUFFIX_RE.sub('', last).strip()
+    if last_stripped != last:
+        # DB has suffix, box score didn't → try matching with stripped last
+        p = qs.filter(last_name__iexact=last_stripped, first_name__iexact=first).first()
+        if p:
+            return p
+        matches = qs.filter(last_name__iexact=last_stripped, first_name__istartswith=first[0])
+        if matches.count() == 1:
+            return matches.first()
+    else:
+        # Scraped name had no suffix → DB might have one; match where last starts with our value
+        matches = qs.filter(last_name__istartswith=last, first_name__iexact=first)
+        if matches.count() == 1:
+            return matches.first()
+        matches = qs.filter(last_name__istartswith=last, first_name__istartswith=first[0])
+        if matches.count() == 1:
+            return matches.first()
 
     return None
 
