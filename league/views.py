@@ -65,6 +65,20 @@ import zoneinfo as _zoneinfo
 _ET = _zoneinfo.ZoneInfo('America/New_York')
 
 
+def _player_name_q(search):
+    """Return a Q object that matches players by name.
+    Handles 'first last', 'last first', or partial single-word searches."""
+    parts = search.split()
+    if len(parts) >= 2:
+        first, last = parts[0], ' '.join(parts[1:])
+        return (
+            Q(first_name__icontains=search) | Q(last_name__icontains=search) |
+            (Q(first_name__icontains=first) & Q(last_name__icontains=last)) |
+            (Q(first_name__icontains=last) & Q(last_name__icontains=first))
+        )
+    return Q(first_name__icontains=search) | Q(last_name__icontains=search)
+
+
 def _is_locked():
     """Return True if team transactions/lineup changes are currently locked.
 
@@ -964,9 +978,7 @@ def players_list(request):
         if not show_all and not fantasy_team_id:
             coaches = coaches.filter(fantasy_team__isnull=True)
         if search:
-            coaches = coaches.filter(
-                Q(first_name__icontains=search) | Q(last_name__icontains=search)
-            )
+            coaches = coaches.filter(_player_name_q(search))
         if sort == 'weekly_points':
             coaches = coaches.order_by(
                 'cached_weekly_points' if order == 'asc' else '-cached_weekly_points',
@@ -1024,9 +1036,7 @@ def players_list(request):
     if not show_all and not fantasy_team_id:
         players = players.filter(fantasy_team__isnull=True)
     if search:
-        players = players.filter(
-            Q(first_name__icontains=search) | Q(last_name__icontains=search)
-        )
+        players = players.filter(_player_name_q(search))
 
     db_field = _SORT_FIELD_MAP.get(sort, 'cached_season_points')
     players = players.order_by(db_field if order == 'asc' else f'-{db_field}')
@@ -2161,9 +2171,7 @@ def commissioner_team_roster(request, team_id):
     available_players = Player.objects.exclude(fantasy_team=team).select_related('real_team', 'fantasy_team').order_by('last_name', 'first_name')
     search = request.GET.get('search', '').strip()
     if search:
-        available_players = available_players.filter(
-            Q(first_name__icontains=search) | Q(last_name__icontains=search)
-        )
+        available_players = available_players.filter(_player_name_q(search))
 
     return render(request, 'league/commissioner/commissioner_team_roster.html', {
         'viewed_team': team,
@@ -2364,9 +2372,7 @@ def free_agent_board(request):
     if class_year:
         players = players.filter(class_year=class_year)
     if search:
-        players = players.filter(
-            Q(first_name__icontains=search) | Q(last_name__icontains=search)
-        )
+        players = players.filter(_player_name_q(search))
 
     # Sorting
     sort_options = {
