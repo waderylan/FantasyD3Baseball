@@ -485,8 +485,9 @@ def roster_view(request, team_id):
         stat_start, stat_end = current_week.start_date, current_week.end_date
     else:
         stat_range = 'season'
-        first_week = Week.objects.order_by('start_date').first()
-        stat_start = first_week.start_date if first_week else today
+        from django.db.models import Min
+        earliest = RealGame.objects.aggregate(Min('date'))['date__min']
+        stat_start = earliest if earliest else today
         stat_end = today
 
     def player_row(player):
