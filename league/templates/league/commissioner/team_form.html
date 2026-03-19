@@ -20,7 +20,7 @@
     <div class="mb-3">
         <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
         {% if field.name == 'password' %}
-        {% render_field field class="form-control" %}
+        {% render_field field class="form-control" type="text" %}
         {% else %}
         {% render_field field class="form-control" %}
         {% endif %}
