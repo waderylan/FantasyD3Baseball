@@ -1722,8 +1722,13 @@ def submit_coach_win_dispute(request, coach_id, game_id):
     if request.method == 'POST':
         dispute_type = request.POST.get('dispute_type')
         user_message = request.POST.get('user_message', '').strip()
+        already_a_win = game.winner_id == coach.real_team_id
         if dispute_type not in ('add_win', 'remove_win'):
             messages.error(request, 'Please select a dispute type.')
+        elif dispute_type == 'add_win' and already_a_win:
+            messages.error(request, 'This game is already recorded as a win — no change needed.')
+        elif dispute_type == 'remove_win' and not already_a_win:
+            messages.error(request, 'This game is already recorded as a loss — no change needed.')
         else:
             PendingRequest.objects.create(
                 request_type='coach_win', submitted_by=team,
@@ -1738,8 +1743,9 @@ def submit_coach_win_dispute(request, coach_id, game_id):
             messages.success(request, 'Coach win dispute submitted.')
             return redirect('league:dispute_list')
 
+    preselect_type = request.GET.get('type', '')
     return render(request, 'league/submit_coach_win_dispute.html', {
-        'coach': coach, 'game': game,
+        'coach': coach, 'game': game, 'preselect_type': preselect_type,
     })
 
 

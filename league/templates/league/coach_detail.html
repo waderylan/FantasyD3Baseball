@@ -53,9 +53,7 @@
                 <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
                 <td>
-                    {% if item.is_win %}
-                    <a href="{% url 'league:submit_coach_win_dispute' coach.id item.game.id %}" class="btn btn-sm btn-outline-warning">Dispute</a>
-                    {% endif %}
+                    <a href="{% url 'league:submit_coach_win_dispute' coach.id item.game.id %}?type={% if item.is_win %}remove_win{% else %}add_win{% endif %}" class="btn btn-sm btn-outline-warning">Dispute</a>
                 </td>
                 {% endif %}
             </tr>
