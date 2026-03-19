@@ -7,6 +7,7 @@
     <h2>Set Lineup — {{ team }}</h2>
     <div class="d-flex gap-2">
         <button type="submit" form="lineupForm" class="btn btn-primary">Save Lineup</button>
+        <button type="button" class="btn btn-success" onclick="startAll()">Start All</button>
         <a href="{% url 'league:roster' team.id %}" class="btn btn-secondary">Cancel</a>
     </div>
 </div>
@@ -143,5 +144,27 @@ function wireSelect(sel) {
 
 document.querySelectorAll('select.player-select').forEach(wireSelect);
 refreshEmptyBenchOptions();
+
+function startAll() {
+    const benchContainer = document.getElementById('bench-container');
+    const benchSelects = Array.from(benchContainer.querySelectorAll('select.player-select'));
+    const poolSet = new Set(benchSelects.map(s => s.value).filter(v => v));
+    if (poolSet.size === 0) return;
+
+    const activeSelects = Array.from(document.querySelectorAll('select.player-select'))
+        .filter(sel => !benchContainer.contains(sel) && !sel.value);
+
+    activeSelects.forEach(function(sel) {
+        for (let i = 0; i < sel.options.length; i++) {
+            const opt = sel.options[i];
+            if (opt.value && poolSet.has(opt.value)) {
+                sel.value = opt.value;
+                poolSet.delete(opt.value);
+                sel.dispatchEvent(new Event('change'));
+                break;
+            }
+        }
+    });
+}
 </script>
 {% endblock %}
