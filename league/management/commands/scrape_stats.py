@@ -337,6 +337,16 @@ def _match_player(first, last, real_team):
         if matches.count() == 1:
             return matches.first()
 
+    # Compound last name: DB stores middle name + last name (e.g. 'Jay Walker III')
+    # but box score only shows the last part ('Walker' or 'Walker III').
+    # Try contains match on both the scraped last and its suffix-stripped form.
+    for try_last in dict.fromkeys([last_stripped, last]):  # deduplicated, stripped first
+        if not try_last:
+            continue
+        matches = qs.filter(last_name__icontains=try_last, first_name__istartswith=first[0])
+        if matches.count() == 1:
+            return matches.first()
+
     return None
 
 
