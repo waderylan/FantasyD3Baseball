@@ -112,6 +112,16 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
+CSRF_FAILURE_VIEW = 'league.views.csrf_failure'
+CSRF_COOKIE_AGE = 31449600   # 1 year
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+
+# Derive CSRF_TRUSTED_ORIGINS from ALLOWED_HOSTS (prepend https://)
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host}' for host in ALLOWED_HOSTS
+    if host not in ('localhost', '127.0.0.1')
+]
+
 
 # --- Default primary key ---
 

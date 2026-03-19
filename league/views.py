@@ -35,6 +35,11 @@ from .schedule import generate_round_robin
 
 # --- Decorators ---
 
+def csrf_failure(request, reason=""):
+    messages.error(request, "Session expired. Please try again.")
+    return redirect('league:login')
+
+
 def commissioner_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
