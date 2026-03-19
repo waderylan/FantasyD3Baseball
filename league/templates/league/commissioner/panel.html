@@ -61,11 +61,11 @@
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card">
+        <div class="card" style="opacity:0.5;">
             <div class="card-body">
                 <h5 class="card-title">Stats Scraper</h5>
                 <p class="card-text">Import box scores from Liberty League</p>
-                <a href="{% url 'league:run_scraper' %}" class="btn btn-warning">Run Scraper</a>
+                <button class="btn btn-secondary" disabled>Run Scraper</button>
             </div>
         </div>
     </div>
@@ -91,7 +91,7 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Coach Points</h5>
-                <p class="card-text">Backfill game winners and recalculate all coach point caches</p>
+                <p class="card-text">Recalculate all coach point caches</p>
                 <form method="post" action="{% url 'league:recalculate_coaches' %}">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-warning">Recalculate Coach Points</button>
