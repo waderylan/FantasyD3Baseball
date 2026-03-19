@@ -39,7 +39,7 @@
             <tr>
                 <th>Date</th>
                 <th>Game</th>
-                <th class="text-center">W</th>
+                <th class="text-center">W/L</th>
                 <th class="text-end">Pts</th>
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
             </tr>
@@ -49,21 +49,25 @@
             <tr>
                 <td>{{ item.game.date }}</td>
                 <td>{{ item.game }}</td>
-                <td class="text-center">W</td>
+                <td class="text-center">{% if item.is_win %}W{% else %}L{% endif %}</td>
                 <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
-                <td><a href="{% url 'league:submit_coach_win_dispute' coach.id item.game.id %}" class="btn btn-sm btn-outline-warning">Dispute</a></td>
+                <td>
+                    {% if item.is_win %}
+                    <a href="{% url 'league:submit_coach_win_dispute' coach.id item.game.id %}" class="btn btn-sm btn-outline-warning">Dispute</a>
+                    {% endif %}
+                </td>
                 {% endif %}
             </tr>
             {% empty %}
             <tr>
-                <td colspan="{% if request.fantasy_team and not request.fantasy_team.is_commissioner %}5{% else %}4{% endif %}" class="text-center">No wins recorded.</td>
+                <td colspan="{% if request.fantasy_team and not request.fantasy_team.is_commissioner %}5{% else %}4{% endif %}" class="text-center">No games recorded.</td>
             </tr>
             {% endfor %}
             {% if log_data %}
             <tr class="table-dark fw-bold">
                 <td colspan="2">Totals</td>
-                <td class="text-center">{{ total_wins }}W</td>
+                <td class="text-center">{{ total_wins }}W – {{ total_losses }}L</td>
                 <td class="text-end">{{ total_points|pts_format }}</td>
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}<td></td>{% endif %}
             </tr>

@@ -843,15 +843,24 @@ def coach_detail(request, coach_id):
         Coach.objects.select_related('real_team', 'fantasy_team'), pk=coach_id
     )
     ps = PointSettings.load()
+    win_game_ids = set(
+        RealGame.objects.filter(winner=coach.real_team).values_list('id', flat=True)
+    )
     games = RealGame.objects.filter(
-        winner=coach.real_team
+        Q(home_team=coach.real_team) | Q(away_team=coach.real_team)
     ).select_related('home_team', 'away_team').order_by('-date', '-game_number')
 
     log_data = []
     for game in games:
-        log_data.append({'game': game, 'points': ps.coach_win})
+        is_win = game.id in win_game_ids
+        log_data.append({
+            'game': game,
+            'is_win': is_win,
+            'points': ps.coach_win if is_win else Decimal('0'),
+        })
 
-    total_wins = len(log_data)
+    total_wins = sum(1 for e in log_data if e['is_win'])
+    total_losses = sum(1 for e in log_data if not e['is_win'])
     total_points = ps.coach_win * total_wins
 
     user_has_coach = (
@@ -864,6 +873,7 @@ def coach_detail(request, coach_id):
         'coach': coach,
         'log_data': log_data,
         'total_wins': total_wins,
+        'total_losses': total_losses,
         'total_points': total_points,
         'user_has_coach': user_has_coach,
     })

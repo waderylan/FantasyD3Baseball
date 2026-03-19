@@ -224,11 +224,12 @@
 
 {# Coaches section #}
 {% if coach_rows %}
-<h5>Coaches</h5>
+<h5>Coach</h5>
 <div class="table-responsive mb-4">
     <table class="table table-sm table-striped align-middle">
         <thead class="table-dark">
             <tr>
+                <th style="width:55px">Slot</th>
                 <th>Coach</th>
                 <th>School</th>
                 <th class="text-end">W</th>
@@ -239,8 +240,8 @@
         <tbody>
             {% for cr in coach_rows %}
             <tr>
+                <td><span class="badge" style="background-color:#6f42c1;">MGR</span></td>
                 <td>
-                    <span class="badge me-1" style="background-color: #6f42c1;">MGR</span>
                     <a href="{% url 'league:coach_detail' cr.coach.id %}" class="text-decoration-none">
                         {{ cr.coach.last_name }}, {{ cr.coach.first_name }}
                     </a>
