@@ -1,6 +1,6 @@
 import datetime
 from decimal import Decimal
-from django.db.models import Q
+from django.db.models import Q, Min
 from .models import (
     PointSettings, HittingGameLog, PitchingGameLog,
     Player, FantasyTeam, Matchup, Week, RosterSlot, WeeklyLineupSlot, ExcludedDay, PITCHING_POSITIONS,
@@ -187,6 +187,17 @@ def refresh_player_points(player, current_week=None, ps=None):
         season_pts += pts
         if current_week and w.pk == current_week.pk:
             weekly_pts = pts
+
+    # Include games played before the first week was defined (e.g. league created mid-season)
+    first_week = Week.objects.order_by('start_date').first()
+    if first_week:
+        if player.is_pitcher:
+            earliest_date = PitchingGameLog.objects.filter(player=player).aggregate(d=Min('game__date'))['d']
+        else:
+            earliest_date = HittingGameLog.objects.filter(player=player).aggregate(d=Min('game__date'))['d']
+        pre_end = first_week.start_date - datetime.timedelta(days=1)
+        if earliest_date and earliest_date <= pre_end:
+            season_pts += calc_player_points_for_period(player, earliest_date, pre_end, ps)
 
     if player.is_pitcher:
         games_played = PitchingGameLog.objects.filter(player=player).count()
