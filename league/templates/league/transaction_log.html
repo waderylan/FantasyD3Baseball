@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load league_extras %}
 
 {% block title %}Transaction Log{% endblock %}
 
@@ -42,10 +43,22 @@
                 <td>
                     {% if item.player %}
                         <a href="{% url 'league:player_detail' item.player.id %}">{{ item.player.first_name }} {{ item.player.last_name }}</a>
+                    {% elif item.coach %}
+                        <a href="{% url 'league:coach_detail' item.coach.id %}">{{ item.coach.first_name }} {{ item.coach.last_name }}</a>
                     {% else %}—{% endif %}
                 </td>
-                <td>{% if item.player %}{{ item.player.position }}{% else %}—{% endif %}</td>
-                <td>{% if item.player %}{{ item.player.real_team.abbreviation }}{% else %}—{% endif %}</td>
+                <td>
+                    {% if item.player %}
+                        <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span>
+                    {% elif item.coach %}
+                        <span class="badge" style="background-color:#6f42c1;">MGR</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>
+                    {% if item.player %}{{ item.player.real_team.abbreviation }}
+                    {% elif item.coach %}{{ item.coach.real_team.abbreviation }}
+                    {% else %}—{% endif %}
+                </td>
                 <td>{{ item.fantasy_team|default:"—" }}</td>
                 <td class="text-muted small">{{ item.description|default:"" }}</td>
             </tr>

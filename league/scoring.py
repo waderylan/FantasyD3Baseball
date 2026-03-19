@@ -3,7 +3,8 @@ from decimal import Decimal
 from django.db.models import Q
 from .models import (
     PointSettings, HittingGameLog, PitchingGameLog,
-    Player, FantasyTeam, Matchup, Week, RosterSlot, WeeklyLineupSlot, ExcludedDay, PITCHING_POSITIONS
+    Player, FantasyTeam, Matchup, Week, RosterSlot, WeeklyLineupSlot, ExcludedDay, PITCHING_POSITIONS,
+    Coach, RealGame,
 )
 
 
@@ -99,6 +100,19 @@ def _active_players(fantasy_team, week=None):
     return Player.objects.filter(pk__in=ids)
 
 
+def calc_coach_points_for_period(coach, start_date, end_date, ps=None, excluded_dates=()):
+    if ps is None:
+        ps = PointSettings.load()
+    qs = RealGame.objects.filter(
+        winner=coach.real_team,
+        date__gte=start_date,
+        date__lte=end_date,
+    )
+    if excluded_dates:
+        qs = qs.exclude(date__in=excluded_dates)
+    return Decimal(qs.count()) * ps.coach_win
+
+
 def calc_team_weekly_points(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
@@ -106,6 +120,8 @@ def calc_team_weekly_points(fantasy_team, week, ps=None):
     total = Decimal('0')
     for player in _active_players(fantasy_team, week=week):
         total += calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded)
+    for coach in Coach.objects.filter(fantasy_team=fantasy_team):
+        total += calc_coach_points_for_period(coach, week.start_date, week.end_date, ps, excluded_dates=excluded)
     return total
 
 
@@ -127,6 +143,9 @@ def get_player_weekly_breakdown(fantasy_team, week, ps=None):
     for player in _active_players(fantasy_team, week=week):
         pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded)
         breakdown.append({'player': player, 'points': pts})
+    for coach in Coach.objects.filter(fantasy_team=fantasy_team):
+        pts = calc_coach_points_for_period(coach, week.start_date, week.end_date, ps, excluded_dates=excluded)
+        breakdown.append({'player': None, 'coach': coach, 'points': pts})
     breakdown.sort(key=lambda x: x['points'], reverse=True)
     return breakdown
 
@@ -191,6 +210,33 @@ def refresh_all_players(ps=None):
     current_week = _current_week()
     for player in Player.objects.all():
         refresh_player_points(player, current_week=current_week, ps=ps)
+
+
+def refresh_coach_points(coach, current_week=None, ps=None):
+    if ps is None:
+        ps = PointSettings.load()
+    if current_week is None:
+        current_week = _current_week()
+    season_pts = Decimal('0')
+    weekly_pts = Decimal('0')
+    for w in Week.objects.all():
+        excluded = list(ExcludedDay.objects.filter(week=w).values_list('date', flat=True))
+        pts = calc_coach_points_for_period(coach, w.start_date, w.end_date, ps, excluded_dates=excluded)
+        season_pts += pts
+        if current_week and w.pk == current_week.pk:
+            weekly_pts = pts
+    Coach.objects.filter(pk=coach.pk).update(
+        cached_season_points=season_pts,
+        cached_weekly_points=weekly_pts,
+    )
+
+
+def refresh_all_coaches(ps=None):
+    if ps is None:
+        ps = PointSettings.load()
+    current_week = _current_week()
+    for coach in Coach.objects.all():
+        refresh_coach_points(coach, current_week=current_week, ps=ps)
 
 
 def get_standings():

@@ -664,9 +664,11 @@ class Command(BaseCommand):
         self._print_totals(totals, dry_run)
         if not dry_run and totals['imported'] > 0:
             self.stdout.write('Refreshing cached player points...')
-            from league.scoring import refresh_all_players
+            from league.scoring import refresh_all_players, refresh_all_coaches
             refresh_all_players()
             self.stdout.write(self.style.SUCCESS('Player points updated.'))
+            refresh_all_coaches()
+            self.stdout.write(self.style.SUCCESS('Coach points updated.'))
 
     def _print_totals(self, totals, dry_run):
         self.stdout.write(self.style.SUCCESS(
@@ -918,6 +920,13 @@ class Command(BaseCommand):
                     imp, unm = self._import_pitching(tables['pitching'], game, team, dry_run, force)
                     total_imported += imp
                     total_unmatched += unm
+
+        if not dry_run:
+            from league.models import PitchingGameLog as _PGL
+            winning_log = _PGL.objects.filter(game=game, win=True).select_related('player__real_team').first()
+            if winning_log:
+                game.winner = winning_log.player.real_team
+                game.save(update_fields=['winner'])
 
         verb = 'Would write' if dry_run else 'Wrote'
         self.stdout.write(

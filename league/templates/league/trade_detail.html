@@ -27,9 +27,15 @@
             <div class="card-header"><strong>{{ trade.sender }}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in give_items %}
-                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span></li>
+                <li class="list-group-item">
+                    {% if item.player %}
+                        {{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span>
+                    {% elif item.coach %}
+                        {{ item.coach.last_name }}, {{ item.coach.first_name }} <span class="badge" style="background-color:#6f42c1;">MGR</span>
+                    {% endif %}
+                </li>
                 {% empty %}
-                <li class="list-group-item text-muted fst-italic">No players</li>
+                <li class="list-group-item text-muted fst-italic">Nothing</li>
                 {% endfor %}
             </ul>
         </div>
@@ -39,9 +45,15 @@
             <div class="card-header"><strong>{{ trade.receiver }}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in receive_items %}
-                <li class="list-group-item">{{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span></li>
+                <li class="list-group-item">
+                    {% if item.player %}
+                        {{ item.player.last_name }}, {{ item.player.first_name }} <span class="badge bg-{{ item.player.position|position_badge_color }}">{{ item.player.position }}</span>
+                    {% elif item.coach %}
+                        {{ item.coach.last_name }}, {{ item.coach.first_name }} <span class="badge" style="background-color:#6f42c1;">MGR</span>
+                    {% endif %}
+                </li>
                 {% empty %}
-                <li class="list-group-item text-muted fst-italic">No players</li>
+                <li class="list-group-item text-muted fst-italic">Nothing</li>
                 {% endfor %}
             </ul>
         </div>

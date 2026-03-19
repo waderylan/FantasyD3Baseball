@@ -42,6 +42,7 @@
             {% for code, label in position_choices %}
             <option value="{{ code }}" {% if selected_position == code %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
+            <option value="coaches" {% if selected_position == "coaches" %}selected{% endif %}>Coach</option>
         </select>
     </div>
     {% if show_all %}
@@ -67,6 +68,65 @@
     </div>
 </form>
 
+{% if selected_position == 'coaches' %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Coach</th>
+                <th>Pos</th>
+                <th>School</th>
+                {% if show_all or selected_fantasy_team %}<th>Fantasy Team</th>{% endif %}
+                {% with base_qs="real_team="|add:selected_real_team|add:"&position=coaches&fantasy_team="|add:selected_fantasy_team|add:"&show_all="|add:show_all %}
+                <th class="text-end">
+                    {% if sort == 'weekly_points' %}
+                        {% if order == 'asc' %}<a href="?{{ base_qs }}&sort=weekly_points&order=desc" class="text-warning text-decoration-none">Week Points &uarr;</a>
+                        {% else %}<a href="?{{ base_qs }}&sort=weekly_points&order=asc" class="text-warning text-decoration-none">Week Points &darr;</a>{% endif %}
+                    {% else %}
+                        <a href="?{{ base_qs }}&sort=weekly_points&order=desc" class="text-white text-decoration-none">Week Points</a>
+                    {% endif %}
+                </th>
+                <th class="text-end">
+                    {% if sort == 'season_points' or not sort %}
+                        {% if order == 'asc' %}<a href="?{{ base_qs }}&sort=season_points&order=desc" class="text-warning text-decoration-none">Season Points &uarr;</a>
+                        {% else %}<a href="?{{ base_qs }}&sort=season_points&order=asc" class="text-warning text-decoration-none">Season Points &darr;</a>{% endif %}
+                    {% else %}
+                        <a href="?{{ base_qs }}&sort=season_points&order=desc" class="text-white text-decoration-none">Season Points</a>
+                    {% endif %}
+                </th>
+                {% endwith %}
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cd in coach_data %}
+            <tr>
+                <td>{{ cd.coach.first_name }} {{ cd.coach.last_name }}</td>
+                <td><span class="badge" style="background-color: #6f42c1;">MGR</span></td>
+                <td>{{ cd.coach.real_team.abbreviation }}</td>
+                {% if show_all or selected_fantasy_team %}
+                <td>{{ cd.coach.fantasy_team|default:"—" }}</td>
+                {% endif %}
+                <td class="text-end">{{ cd.coach.cached_weekly_points|pts_format }}</td>
+                <td class="text-end">{{ cd.coach.cached_season_points|pts_format }}</td>
+                <td class="text-nowrap">
+                    <a href="{% url 'league:coach_detail' cd.coach.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                    {% if request.fantasy_team and not request.fantasy_team.is_commissioner and not cd.coach.fantasy_team and not user_has_coach %}
+                    <form method="post" action="{% url 'league:member_add_coach' cd.coach.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-sm btn-success">Add</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="{% if show_all or selected_fantasy_team %}7{% else %}6{% endif %}" class="text-center text-muted py-3">No coaches found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
 <div class="table-responsive">
     <table class="table table-striped">
         <thead class="table-dark">
@@ -146,6 +206,7 @@
         </tbody>
     </table>
 </div>
+{% endif %}
 
 {% if page_obj.paginator.num_pages > 1 %}
 <nav class="d-flex justify-content-between align-items-center mt-3">

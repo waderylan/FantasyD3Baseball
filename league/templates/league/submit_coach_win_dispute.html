@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Coach Win Dispute{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">Submit Coach Win Dispute</h2>
+<p class="text-muted mb-4">
+    Coach: <strong>{{ coach.first_name }} {{ coach.last_name }}</strong> ({{ coach.real_team }})
+    &mdash; Game: <strong>{{ game }}</strong>
+</p>
+
+<div class="card mb-4" style="max-width: 400px;">
+    <div class="card-body">
+        <table class="table table-sm table-bordered mb-0">
+            <tr><th>Date</th><td>{{ game.date }}</td></tr>
+            <tr><th>Home</th><td>{{ game.home_team }}</td></tr>
+            <tr><th>Away</th><td>{{ game.away_team }}</td></tr>
+            <tr>
+                <th>Current Winner</th>
+                <td>{% if game.winner %}{{ game.winner }}{% else %}<span class="text-muted">Not set</span>{% endif %}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<form method="post" style="max-width: 500px;">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Dispute Type</label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="dispute_type" id="add_win" value="add_win">
+            <label class="form-check-label" for="add_win">
+                <strong>Add Win</strong> — {{ coach.real_team }} won this game but it's not being counted
+            </label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="dispute_type" id="remove_win" value="remove_win">
+            <label class="form-check-label" for="remove_win">
+                <strong>Remove Win</strong> — {{ coach.real_team }} is incorrectly credited with winning this game
+            </label>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="user_message" class="form-label fw-bold">Message <span class="text-muted fw-normal">(optional)</span></label>
+        <textarea name="user_message" id="user_message" class="form-control" rows="3" placeholder="Explain your dispute..."></textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-warning">Submit Dispute</button>
+        <a href="{% url 'league:coach_dispute_select_game' coach.id %}" class="btn btn-secondary">Back</a>
+    </div>
+</form>
+{% endblock %}

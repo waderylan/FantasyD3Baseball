@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Select Game — Coach Dispute{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">New Coach Win Dispute</h2>
+<p class="text-muted mb-4">Coach: <strong>{{ coach.first_name }} {{ coach.last_name }}</strong> ({{ coach.real_team }})</p>
+
+<p>Select the game you want to dispute:</p>
+
+{% if games %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Matchup</th>
+                <th>Current Winner</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for game in games %}
+            <tr>
+                <td>{{ game.date }}</td>
+                <td>{{ game.away_team.abbreviation }} @ {{ game.home_team.abbreviation }}</td>
+                <td>
+                    {% if game.winner %}
+                        {{ game.winner.name }}
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'league:submit_coach_win_dispute' coach.id game.id %}" class="btn btn-sm btn-outline-primary">Select</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No games found for {{ coach.real_team.name }}.</p>
+{% endif %}
+
+<a href="{% url 'league:dispute_list' %}" class="btn btn-secondary mt-2">Back</a>
+{% endblock %}

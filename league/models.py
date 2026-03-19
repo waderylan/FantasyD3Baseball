@@ -121,6 +121,10 @@ class RealGame(models.Model):
         help_text='1 for single game or first game of doubleheader, 2 for second game')
     source_url = models.URLField(max_length=500, null=True, blank=True, unique=True,
         help_text='Box score URL this game was scraped from')
+    winner = models.ForeignKey(
+        RealTeam, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='wins'
+    )
 
     class Meta:
         ordering = ['-date', 'game_number']
@@ -236,6 +240,10 @@ class PointSettings(models.Model):
     bb_pitching = models.DecimalField(max_digits=5, decimal_places=2, default=-0.5,
                                       verbose_name='BB (pitching)')
 
+    # Coach points
+    coach_win = models.DecimalField(max_digits=5, decimal_places=2, default=5,
+                                    verbose_name='Coach win')
+
     class Meta:
         verbose_name = 'Point Settings'
         verbose_name_plural = 'Point Settings'
@@ -315,6 +323,10 @@ class Transaction(models.Model):
         Player, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='transactions'
     )
+    coach = models.ForeignKey(
+        'Coach', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='transactions'
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
     notes = models.CharField(max_length=255, blank=True, default='')
 
@@ -349,6 +361,7 @@ class PendingRequest(models.Model):
         ('game_add', 'Add Game'),
         ('stat_modify', 'Modify Stats'),
         ('missing_game', 'Missing Game'),
+        ('coach_win', 'Coach Win'),
     ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -372,6 +385,10 @@ class PendingRequest(models.Model):
     source_url = models.URLField(max_length=500, blank=True)
     # stat_modify fields
     player = models.ForeignKey('Player', on_delete=models.CASCADE, null=True, blank=True)
+    coach = models.ForeignKey(
+        'Coach', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='disputes'
+    )
     game = models.ForeignKey('RealGame', on_delete=models.CASCADE, null=True, blank=True)
     stat_type = models.CharField(max_length=10, blank=True)  # 'hitting' or 'pitching'
     proposed_data = models.JSONField(null=True, blank=True)
@@ -424,6 +441,9 @@ class ActivityEntry(models.Model):
     player = models.ForeignKey(
         'Player', on_delete=models.SET_NULL, null=True, blank=True
     )
+    coach = models.ForeignKey(
+        'Coach', on_delete=models.SET_NULL, null=True, blank=True
+    )
     description = models.TextField()
 
     class Meta:
@@ -460,13 +480,15 @@ class Trade(models.Model):
 class TradeItem(models.Model):
     DIRECTION_CHOICES = [('give', 'Give'), ('receive', 'Receive')]
     trade = models.ForeignKey(Trade, on_delete=models.CASCADE, related_name='items')
-    player = models.ForeignKey(Player, on_delete=models.CASCADE)
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, null=True, blank=True)
+    coach = models.ForeignKey('Coach', on_delete=models.CASCADE, null=True, blank=True)
     direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
-    # 'give' = sender gives this player to receiver
-    # 'receive' = sender receives this player from receiver
+    # 'give' = sender gives this player/coach to receiver
+    # 'receive' = sender receives this player/coach from receiver
 
     def __str__(self):
-        return f"{self.direction}: {self.player}"
+        subject = self.player or self.coach
+        return f"{self.direction}: {subject}"
 
 
 class WeeklyLineupSlot(models.Model):
@@ -493,3 +515,22 @@ class ExcludedDay(models.Model):
     class Meta:
         unique_together = ['week', 'date']
         ordering = ['date']
+
+
+class Coach(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    real_team = models.ForeignKey(RealTeam, on_delete=models.CASCADE, related_name='coaches')
+    fantasy_team = models.ForeignKey(
+        FantasyTeam, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='coaches'
+    )
+    fantasy_team_since = models.DateField(null=True, blank=True)
+    cached_season_points = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    cached_weekly_points = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ['last_name', 'first_name']
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.real_team})"

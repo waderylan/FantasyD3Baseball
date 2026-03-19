@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Review Coach Win Dispute{% endblock %}
+
+{% block content %}
+<h2 class="mb-1">Review Coach Win Dispute</h2>
+<p class="text-muted mb-4">
+    Coach: <strong>{{ dispute.coach.first_name }} {{ dispute.coach.last_name }}</strong> ({{ dispute.coach.real_team }})
+    &mdash; submitted by <strong>{{ dispute.submitted_by }}</strong>
+    on {{ dispute.submitted_at|date:"M d, Y" }}
+</p>
+
+<div class="card mb-4" style="max-width: 450px;">
+    <div class="card-body">
+        <table class="table table-sm table-bordered mb-0">
+            <tr><th>Game</th><td>{{ dispute.game }}</td></tr>
+            <tr><th>Date</th><td>{{ dispute.game.date }}</td></tr>
+            <tr><th>Home</th><td>{{ dispute.game.home_team }}</td></tr>
+            <tr><th>Away</th><td>{{ dispute.game.away_team }}</td></tr>
+            <tr>
+                <th>Current Winner</th>
+                <td>{% if dispute.game.winner %}{{ dispute.game.winner }}{% else %}<span class="text-muted">Not set</span>{% endif %}</td>
+            </tr>
+            <tr>
+                <th>Dispute Type</th>
+                <td>
+                    {% if dispute.stat_type == 'add_win' %}
+                        <span class="badge bg-success">Add Win</span> — claiming {{ dispute.coach.real_team }} should be the winner
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Remove Win</span> — claiming {{ dispute.coach.real_team }} should NOT be the winner
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+{% if dispute.user_message %}
+<div class="alert alert-info mb-4">
+    <strong>User message:</strong> {{ dispute.user_message }}
+</div>
+{% endif %}
+
+{% if dispute.status != 'pending' %}
+<div class="alert {% if dispute.status == 'approved' %}alert-success{% elif dispute.status == 'denied' %}alert-danger{% else %}alert-secondary{% endif %}">
+    This dispute was <strong>{{ dispute.status }}</strong>
+    {% if dispute.reviewed_by %}by {{ dispute.reviewed_by }}{% endif %}
+    {% if dispute.reviewed_at %}on {{ dispute.reviewed_at|date:"M d, Y" }}{% endif %}.
+    {% if dispute.commissioner_note %}<br><strong>Note:</strong> {{ dispute.commissioner_note }}{% endif %}
+</div>
+<a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+
+{% else %}
+
+<div class="alert alert-warning mb-4" style="max-width: 500px;">
+    {% if dispute.stat_type == 'add_win' %}
+    Approving will set <strong>{{ dispute.game }}</strong> winner to <strong>{{ dispute.coach.real_team }}</strong> and refresh all coach points.
+    {% else %}
+    Approving will clear the winner for <strong>{{ dispute.game }}</strong> and refresh all coach points.
+    {% endif %}
+</div>
+
+<form method="post" style="max-width: 400px;">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label fw-bold">Commissioner Note <span class="text-muted fw-normal">(optional)</span></label>
+        <textarea name="commissioner_note" class="form-control" rows="2"></textarea>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
+        <button type="submit" name="action" value="deny" class="btn btn-danger">Deny</button>
+        <a href="{% url 'league:commissioner_disputes' %}" class="btn btn-secondary">Back</a>
+    </div>
+</form>
+{% endif %}
+{% endblock %}

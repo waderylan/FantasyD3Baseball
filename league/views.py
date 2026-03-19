@@ -14,7 +14,7 @@ from .models import (
     FantasyTeam, Player, RealTeam, RealGame,
     HittingGameLog, PitchingGameLog, PointSettings,
     Week, Matchup, RosterSlot, WeeklyLineupSlot, Transaction, PendingRequest, ActivityEntry,
-    LeagueSettings, Trade, TradeItem, ExcludedDay,
+    LeagueSettings, Trade, TradeItem, ExcludedDay, Coach,
     PITCHING_POSITIONS, POSITION_CHOICES, SLOT_LIMITS, SLOT_ELIGIBLE, SLOT_ORDER,
 )
 from .forms import (
@@ -27,7 +27,8 @@ from .scoring import (
     calc_team_weekly_points, calc_team_season_points,
     resolve_matchup, get_standings, get_player_weekly_breakdown,
     calc_hitting_points, calc_pitching_points, calc_player_points_for_period,
-    refresh_player_points, refresh_all_players,
+    refresh_player_points, refresh_all_players, calc_coach_points_for_period,
+    refresh_all_coaches,
 )
 from .schedule import generate_round_robin
 
@@ -351,11 +352,27 @@ def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
             else:
                 bench_hitting.append(row)
 
+    coach_slots = []
+    for coach in Coach.objects.filter(fantasy_team=team).select_related('real_team'):
+        pts = calc_coach_points_for_period(coach, week.start_date, week.end_date, ps, excluded_dates=excluded_dates)
+        wins = RealGame.objects.filter(
+            winner=coach.real_team,
+            date__gte=week.start_date,
+            date__lte=week.end_date,
+        ).count()
+        coach_slots.append({'coach': coach, 'points': pts, 'wins': wins})
+
+    coach_total_wins = sum(c['wins'] for c in coach_slots)
+    coach_total_points = sum(c['points'] for c in coach_slots)
+
     return {
         'hitter_slots': hitter_slots,
         'pitcher_slots': pitcher_slots,
         'bench_hitting': bench_hitting,
         'bench_pitching': bench_pitching,
+        'coach_slots': coach_slots,
+        'coach_total_wins': coach_total_wins,
+        'coach_total_points': coach_total_points,
     }
 
 
@@ -515,10 +532,19 @@ def roster_view(request, team_id):
         incoming_trades = list(Trade.objects.filter(receiver=team, status='pending'))
         outgoing_trades = list(Trade.objects.filter(sender=team, status='pending'))
 
+    # Coaches for this team
+    coach_qs = Coach.objects.filter(fantasy_team=team).select_related('real_team')
+    coach_rows = []
+    for c in coach_qs:
+        pts = calc_coach_points_for_period(c, stat_start, stat_end, ps)
+        wins = RealGame.objects.filter(winner=c.real_team, date__gte=stat_start, date__lte=stat_end).count()
+        coach_rows.append({'coach': c, 'points': pts, 'wins': wins})
+
     return render(request, 'league/roster.html', {
         'viewed_team': team,
         'slot_rows': slot_rows,
         'unslotted': unslotted,
+        'coach_rows': coach_rows,
         'current_week': current_week,
         'stat_range': stat_range,
         'incoming_trades': incoming_trades,
@@ -797,6 +823,37 @@ def pitching_entry(request, game_id, player_id):
     })
 
 
+def coach_detail(request, coach_id):
+    coach = get_object_or_404(
+        Coach.objects.select_related('real_team', 'fantasy_team'), pk=coach_id
+    )
+    ps = PointSettings.load()
+    games = RealGame.objects.filter(
+        winner=coach.real_team
+    ).select_related('home_team', 'away_team').order_by('-date', '-game_number')
+
+    log_data = []
+    for game in games:
+        log_data.append({'game': game, 'points': ps.coach_win})
+
+    total_wins = len(log_data)
+    total_points = ps.coach_win * total_wins
+
+    user_has_coach = (
+        request.fantasy_team is not None and
+        not request.fantasy_team.is_commissioner and
+        Coach.objects.filter(fantasy_team=request.fantasy_team).exists()
+    )
+
+    return render(request, 'league/coach_detail.html', {
+        'coach': coach,
+        'log_data': log_data,
+        'total_wins': total_wins,
+        'total_points': total_points,
+        'user_has_coach': user_has_coach,
+    })
+
+
 def game_log_list(request, player_id):
     player = get_object_or_404(Player, pk=player_id)
     ps = PointSettings.load()
@@ -827,10 +884,10 @@ def game_log_list(request, player_id):
 # --- Verification (public) ---
 
 def transaction_log(request):
-    add_drops = Transaction.objects.select_related('fantasy_team', 'player__real_team').all()
+    add_drops = Transaction.objects.select_related('fantasy_team', 'player__real_team', 'coach__real_team').all()
     dispute_entries = ActivityEntry.objects.filter(
         entry_type__in=['dispute_submitted', 'dispute_approved', 'dispute_denied', 'dispute_cancelled']
-    ).select_related('fantasy_team', 'player__real_team')
+    ).select_related('fantasy_team', 'player__real_team', 'coach__real_team')
     accepted_trades = Trade.objects.filter(status='accepted').prefetch_related(
         'items__player__real_team'
     ).select_related('sender', 'receiver')
@@ -838,23 +895,24 @@ def transaction_log(request):
     feed = []
     for t in add_drops:
         feed.append({'kind': t.transaction_type, 'timestamp': t.timestamp,
-                     'player': t.player, 'fantasy_team': t.fantasy_team,
+                     'player': t.player, 'coach': t.coach, 'fantasy_team': t.fantasy_team,
                      'description': t.notes})
     for e in dispute_entries:
         feed.append({'kind': e.entry_type, 'timestamp': e.created_at,
-                     'player': e.player, 'fantasy_team': e.fantasy_team,
+                     'player': e.player, 'coach': e.coach, 'fantasy_team': e.fantasy_team,
                      'description': e.description})
     for trade in accepted_trades:
         give_names = ', '.join(
-            str(i.player) for i in trade.items.all() if i.direction == 'give'
+            str(i.player or i.coach) for i in trade.items.all() if i.direction == 'give'
         ) or 'nothing'
         receive_names = ', '.join(
-            str(i.player) for i in trade.items.all() if i.direction == 'receive'
+            str(i.player or i.coach) for i in trade.items.all() if i.direction == 'receive'
         ) or 'nothing'
         feed.append({
             'kind': 'trade',
             'timestamp': trade.created_at,
             'player': None,
+            'coach': None,
             'fantasy_team': trade.sender,
             'description': f'{trade.sender} traded {give_names} to {trade.receiver} for {receive_names}',
             'trade_id': trade.pk,
@@ -872,8 +930,6 @@ _PER_PAGE_OPTIONS = [25, 50, 100, 250]
 
 
 def players_list(request):
-    players = Player.objects.select_related('real_team', 'fantasy_team').all()
-
     real_team_id     = request.GET.get('real_team', '')
     position         = request.GET.get('position', '')
     fantasy_team_id  = request.GET.get('fantasy_team', '')
@@ -887,6 +943,75 @@ def players_list(request):
             per_page = 50
     except ValueError:
         per_page = 50
+
+    today = datetime.date.today()
+    current_week = Week.objects.filter(
+        start_date__lte=today, end_date__gte=today
+    ).first()
+    if not current_week:
+        current_week = Week.objects.filter(end_date__lt=today).last()
+
+    real_teams    = RealTeam.objects.exclude(abbreviation='OOC')
+    fantasy_teams = FantasyTeam.objects.filter(is_commissioner=False)
+
+    # --- Coach mode ---
+    if position == 'coaches':
+        coaches = Coach.objects.select_related('real_team', 'fantasy_team').all()
+        if real_team_id:
+            coaches = coaches.filter(real_team_id=real_team_id)
+        if fantasy_team_id:
+            coaches = coaches.filter(fantasy_team_id=fantasy_team_id)
+        if not show_all and not fantasy_team_id:
+            coaches = coaches.filter(fantasy_team__isnull=True)
+        if search:
+            coaches = coaches.filter(
+                Q(first_name__icontains=search) | Q(last_name__icontains=search)
+            )
+        if sort == 'weekly_points':
+            coaches = coaches.order_by(
+                'cached_weekly_points' if order == 'asc' else '-cached_weekly_points',
+                'last_name'
+            )
+        elif sort == 'season_points':
+            coaches = coaches.order_by(
+                'cached_season_points' if order == 'asc' else '-cached_season_points',
+                'last_name'
+            )
+        else:
+            coaches = coaches.order_by('last_name', 'first_name')
+
+        paginator = Paginator(coaches, per_page)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+        coach_data = [{'coach': c} for c in page_obj]
+
+        user_has_coach = (
+            request.fantasy_team is not None and
+            not request.fantasy_team.is_commissioner and
+            Coach.objects.filter(fantasy_team=request.fantasy_team).exists()
+        )
+
+        return render(request, 'league/verification.html', {
+            'coach_data':           coach_data,
+            'player_data':          [],
+            'page_obj':             page_obj,
+            'per_page':             per_page,
+            'per_page_options':     _PER_PAGE_OPTIONS,
+            'real_teams':           real_teams,
+            'fantasy_teams':        fantasy_teams,
+            'position_choices':     POSITION_CHOICES,
+            'selected_real_team':   real_team_id,
+            'selected_position':    position,
+            'selected_fantasy_team':fantasy_team_id,
+            'show_all':             show_all,
+            'search':               search,
+            'current_week':         current_week,
+            'sort':                 sort,
+            'order':                order,
+            'user_has_coach':       user_has_coach,
+        })
+
+    # --- Player mode ---
+    players = Player.objects.select_related('real_team', 'fantasy_team').all()
 
     if real_team_id:
         players = players.filter(real_team_id=real_team_id)
@@ -906,13 +1031,6 @@ def players_list(request):
     db_field = _SORT_FIELD_MAP.get(sort, 'cached_season_points')
     players = players.order_by(db_field if order == 'asc' else f'-{db_field}')
 
-    today = datetime.date.today()
-    current_week = Week.objects.filter(
-        start_date__lte=today, end_date__gte=today
-    ).first()
-    if not current_week:
-        current_week = Week.objects.filter(end_date__lt=today).last()
-
     paginator = Paginator(players, per_page)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -924,9 +1042,6 @@ def players_list(request):
         'games_played':  p.cached_games_played,
         'ppg':           p.cached_ppg,
     } for p in page_obj]
-
-    real_teams    = RealTeam.objects.exclude(abbreviation='OOC')
-    fantasy_teams = FantasyTeam.objects.filter(is_commissioner=False)
 
     return render(request, 'league/verification.html', {
         'player_data':          player_data,
@@ -1081,15 +1196,78 @@ def member_drop_player(request, player_id):
     return redirect(request.POST.get('next', 'league:roster'), team.id)
 
 
+@login_required
+def member_add_coach(request, coach_id):
+    if request.method != 'POST':
+        return redirect('league:players')
+    team = request.fantasy_team
+    if team.is_commissioner:
+        messages.error(request, 'Use the commissioner panel to manage rosters.')
+        return redirect('league:players')
+    if _is_locked():
+        messages.error(request, format_html(
+            'Team transactions are currently locked. <a href="{}">View info</a>',
+            '/settings/'
+        ))
+        return redirect('league:roster', team_id=team.pk)
+    if Coach.objects.filter(fantasy_team=team).exists():
+        messages.error(request, 'You already have a coach on your roster. Drop them before adding another.')
+        return redirect(request.POST.get('next', 'league:players'))
+    coach = get_object_or_404(Coach, pk=coach_id)
+    if coach.fantasy_team is not None:
+        messages.error(request, f'{coach} is already on a team.')
+        return redirect('league:roster', team_id=team.pk)
+    coach.fantasy_team = team
+    if _is_sunday_unlock_window():
+        coach.fantasy_team_since = datetime.date.today() + datetime.timedelta(days=1)
+    else:
+        coach.fantasy_team_since = datetime.date.today()
+    coach.save()
+    Transaction.objects.create(transaction_type='add', fantasy_team=team, coach=coach)
+    from league.scoring import refresh_coach_points
+    refresh_coach_points(coach)
+    messages.success(request, f'{coach} added to your roster.')
+    return redirect(request.POST.get('next', 'league:players'))
+
+
+@login_required
+def member_drop_coach(request, coach_id):
+    if request.method != 'POST':
+        return redirect('league:players')
+    team = request.fantasy_team
+    if team.is_commissioner:
+        messages.error(request, 'Use the commissioner panel to manage rosters.')
+        return redirect('league:players')
+    if _is_locked():
+        messages.error(request, format_html(
+            'Team transactions are currently locked. <a href="{}">View info</a>',
+            '/settings/'
+        ))
+        return redirect('league:coach_detail', coach_id=coach_id)
+    coach = get_object_or_404(Coach, pk=coach_id)
+    if coach.fantasy_team != team:
+        messages.error(request, 'That coach is not on your roster.')
+        return redirect('league:coach_detail', coach_id=coach_id)
+    Transaction.objects.create(transaction_type='drop', fantasy_team=team, coach=coach)
+    coach.fantasy_team = None
+    coach.fantasy_team_since = None
+    coach.save()
+    from league.scoring import refresh_coach_points
+    refresh_coach_points(coach)
+    messages.success(request, f'{coach} dropped to free agency.')
+    return redirect(request.POST.get('next', 'league:roster'), team.id)
+
+
 # --- Dispute Views ---
 
 @login_required
 def dispute_list(request):
     team = request.fantasy_team
     disputes = PendingRequest.objects.filter(
-        request_type__in=['stat_modify', 'missing_game'], submitted_by=team
-    ).select_related('player__real_team', 'game', 'reviewed_by').order_by('-submitted_at')
-    return render(request, 'league/disputes.html', {'disputes': disputes})
+        request_type__in=['stat_modify', 'missing_game', 'coach_win'], submitted_by=team
+    ).select_related('player__real_team', 'game', 'reviewed_by', 'coach__real_team').order_by('-submitted_at')
+    my_coaches = Coach.objects.filter(fantasy_team=team)
+    return render(request, 'league/disputes.html', {'disputes': disputes, 'my_coaches': my_coaches})
 
 
 @login_required
@@ -1228,15 +1406,21 @@ def cancel_dispute(request, dispute_id):
     if request.method != 'POST':
         return redirect('league:dispute_list')
     team = request.fantasy_team
-    dispute = get_object_or_404(PendingRequest, pk=dispute_id, request_type__in=['stat_modify', 'missing_game'], submitted_by=team)
+    dispute = get_object_or_404(PendingRequest, pk=dispute_id, request_type__in=['stat_modify', 'missing_game', 'coach_win'], submitted_by=team)
     if dispute.status != 'pending':
         messages.error(request, 'Only pending disputes can be cancelled.')
         return redirect('league:dispute_list')
     dispute.status = 'cancelled'
     dispute.save()
+    if dispute.request_type == 'coach_win':
+        description = f'{team.name} cancelled coach win dispute for {dispute.coach} in {dispute.game}'
+    else:
+        description = f'{team.name} cancelled dispute for {dispute.player} in {dispute.game}'
     ActivityEntry.objects.create(
-        entry_type='dispute_cancelled', fantasy_team=team, player=dispute.player,
-        description=f'{team.name} cancelled dispute for {dispute.player} in {dispute.game}',
+        entry_type='dispute_cancelled', fantasy_team=team,
+        player=dispute.player,
+        coach=dispute.coach if dispute.request_type == 'coach_win' else None,
+        description=description,
     )
     messages.success(request, 'Dispute cancelled.')
     return redirect('league:dispute_list')
@@ -1313,8 +1497,8 @@ def submit_missing_game_dispute(request, player_id):
 @commissioner_required
 def commissioner_disputes(request):
     disputes = PendingRequest.objects.filter(
-        request_type__in=['stat_modify', 'missing_game']
-    ).select_related('submitted_by', 'player__real_team', 'game__home_team', 'game__away_team', 'reviewed_by')
+        request_type__in=['stat_modify', 'missing_game', 'coach_win']
+    ).select_related('submitted_by', 'player__real_team', 'game__home_team', 'game__away_team', 'reviewed_by', 'coach__real_team')
     pending_count = disputes.filter(status='pending').count()
     return render(request, 'league/commissioner/disputes.html', {
         'disputes': disputes,
@@ -1479,6 +1663,110 @@ def review_missing_game(request, dispute_id):
     })
 
 
+@login_required
+def coach_dispute_select_game(request, coach_id):
+    team = request.fantasy_team
+    if team.is_commissioner:
+        return redirect('league:commissioner_disputes')
+    coach = get_object_or_404(Coach, pk=coach_id, fantasy_team=team)
+    games = RealGame.objects.filter(
+        Q(home_team=coach.real_team) | Q(away_team=coach.real_team)
+    ).select_related('home_team', 'away_team').order_by('-date')
+    return render(request, 'league/coach_dispute_select_game.html', {
+        'coach': coach, 'games': games,
+    })
+
+
+@login_required
+def submit_coach_win_dispute(request, coach_id, game_id):
+    team = request.fantasy_team
+    if team.is_commissioner:
+        messages.error(request, 'Commissioners cannot submit disputes.')
+        return redirect('league:dashboard')
+    coach = get_object_or_404(Coach, pk=coach_id, fantasy_team=team)
+    game = get_object_or_404(RealGame.objects.select_related('home_team', 'away_team', 'winner'), pk=game_id)
+
+    if game.home_team != coach.real_team and game.away_team != coach.real_team:
+        messages.error(request, "This game does not involve your coach's team.")
+        return redirect('league:coach_dispute_select_game', coach_id=coach_id)
+
+    existing = PendingRequest.objects.filter(
+        request_type='coach_win', submitted_by=team,
+        coach=coach, game=game, status='pending'
+    ).first()
+    if existing:
+        messages.warning(request, 'You already have a pending dispute for this game.')
+        return redirect('league:dispute_list')
+
+    if request.method == 'POST':
+        dispute_type = request.POST.get('dispute_type')
+        user_message = request.POST.get('user_message', '').strip()
+        if dispute_type not in ('add_win', 'remove_win'):
+            messages.error(request, 'Please select a dispute type.')
+        else:
+            PendingRequest.objects.create(
+                request_type='coach_win', submitted_by=team,
+                coach=coach, game=game, stat_type=dispute_type,
+                user_message=user_message,
+            )
+            ActivityEntry.objects.create(
+                entry_type='dispute_submitted', fantasy_team=team,
+                coach=coach,
+                description=f'{team.name} submitted coach win dispute for {coach} in {game}',
+            )
+            messages.success(request, 'Coach win dispute submitted.')
+            return redirect('league:dispute_list')
+
+    return render(request, 'league/submit_coach_win_dispute.html', {
+        'coach': coach, 'game': game,
+    })
+
+
+@commissioner_required
+def review_coach_win_dispute(request, dispute_id):
+    dispute = get_object_or_404(
+        PendingRequest.objects.select_related(
+            'coach__real_team', 'game__home_team', 'game__away_team',
+            'game__winner', 'submitted_by'
+        ),
+        pk=dispute_id, request_type='coach_win'
+    )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        commissioner_note = request.POST.get('commissioner_note', '').strip()
+        with transaction.atomic():
+            if action == 'approve':
+                game = dispute.game
+                if dispute.stat_type == 'add_win':
+                    game.winner = dispute.coach.real_team
+                else:
+                    game.winner = None
+                game.save(update_fields=['winner'])
+                from league.scoring import refresh_all_coaches
+                refresh_all_coaches()
+                dispute.status = 'approved'
+                entry_type = 'dispute_approved'
+            else:
+                dispute.status = 'denied'
+                entry_type = 'dispute_denied'
+            dispute.commissioner_note = commissioner_note
+            dispute.reviewed_by = request.fantasy_team
+            dispute.reviewed_at = datetime.datetime.now(datetime.timezone.utc)
+            dispute.save()
+            ActivityEntry.objects.create(
+                entry_type=entry_type, fantasy_team=dispute.submitted_by,
+                coach=dispute.coach,
+                description=f'Coach win dispute by {dispute.submitted_by} for {dispute.coach} was {dispute.status}',
+            )
+        messages.success(request, f'Dispute {dispute.status}.')
+        return redirect('league:commissioner_disputes')
+
+    return render(request, 'league/commissioner/review_coach_win_dispute.html', {
+        'dispute': dispute,
+    })
+
+
 # --- Trade Views ---
 
 @login_required
@@ -1507,51 +1795,84 @@ def trade_create(request, team_id):
     if counter_to_id:
         counter_to = Trade.objects.filter(pk=counter_to_id, status='pending', receiver=my_team).first()
         if counter_to:
-            # pre-fill: what the original sender gave becomes our receive, and vice versa
-            prefill_give = list(counter_to.items.filter(direction='receive').values_list('player_id', flat=True))
-            prefill_receive = list(counter_to.items.filter(direction='give').values_list('player_id', flat=True))
+            for item in counter_to.items.filter(direction='receive'):
+                if item.player_id:
+                    prefill_give.append(f'p_{item.player_id}')
+                elif item.coach_id:
+                    prefill_give.append(f'c_{item.coach_id}')
+            for item in counter_to.items.filter(direction='give'):
+                if item.player_id:
+                    prefill_receive.append(f'p_{item.player_id}')
+                elif item.coach_id:
+                    prefill_receive.append(f'c_{item.coach_id}')
 
     my_players = list(Player.objects.filter(fantasy_team=my_team).order_by('last_name', 'first_name'))
     their_players = list(Player.objects.filter(fantasy_team=other_team).order_by('last_name', 'first_name'))
+    my_coach = Coach.objects.filter(fantasy_team=my_team).first()
+    their_coach = Coach.objects.filter(fantasy_team=other_team).first()
 
     if request.method == 'POST':
-        give_ids = [int(v) for v in request.POST.getlist('give_players') if v]
-        receive_ids = [int(v) for v in request.POST.getlist('receive_players') if v]
+        raw_give = [v for v in request.POST.getlist('give_players') if v]
+        raw_receive = [v for v in request.POST.getlist('receive_players') if v]
 
-        if not give_ids or not receive_ids:
-            messages.error(request, 'A trade must include at least one player on each side.')
+        give_player_ids, give_coach_ids = [], []
+        for v in raw_give:
+            if v.startswith('p_'):
+                give_player_ids.append(int(v[2:]))
+            elif v.startswith('c_'):
+                give_coach_ids.append(int(v[2:]))
+
+        receive_player_ids, receive_coach_ids = [], []
+        for v in raw_receive:
+            if v.startswith('p_'):
+                receive_player_ids.append(int(v[2:]))
+            elif v.startswith('c_'):
+                receive_coach_ids.append(int(v[2:]))
+
+        if not (give_player_ids or give_coach_ids) or not (receive_player_ids or receive_coach_ids):
+            messages.error(request, 'A trade must include at least one player or coach on each side.')
             return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
 
-        if len(give_ids) != len(set(give_ids)) or len(receive_ids) != len(set(receive_ids)):
+        if len(give_player_ids) != len(set(give_player_ids)) or len(receive_player_ids) != len(set(receive_player_ids)):
             messages.error(request, 'The same player cannot appear more than once in a trade.')
             return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
 
         my_player_ids = {p.id for p in my_players}
         their_player_ids = {p.id for p in their_players}
+        my_coach_id = my_coach.id if my_coach else None
+        their_coach_id = their_coach.id if their_coach else None
 
-        invalid = [i for i in give_ids if i not in my_player_ids]
-        invalid += [i for i in receive_ids if i not in their_player_ids]
+        invalid = [i for i in give_player_ids if i not in my_player_ids]
+        invalid += [i for i in receive_player_ids if i not in their_player_ids]
+        invalid += [i for i in give_coach_ids if i != my_coach_id]
+        invalid += [i for i in receive_coach_ids if i != their_coach_id]
         if invalid:
-            messages.error(request, 'Invalid player selection.')
+            messages.error(request, 'Invalid player or coach selection.')
             return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
 
-        # Check no give player is already in another pending trade sent by this team
         conflicting = TradeItem.objects.filter(
-            trade__sender=my_team,
-            trade__status='pending',
-            direction='give',
-            player_id__in=give_ids,
+            trade__sender=my_team, trade__status='pending', direction='give',
+            player_id__in=give_player_ids,
         ).exists()
+        if not conflicting and give_coach_ids:
+            conflicting = TradeItem.objects.filter(
+                trade__sender=my_team, trade__status='pending', direction='give',
+                coach_id__in=give_coach_ids,
+            ).exists()
         if conflicting:
-            messages.error(request, 'One or more of your players are already included in another pending trade you sent.')
+            messages.error(request, 'One or more of your players or coaches are already included in another pending trade you sent.')
             return redirect(request.path + (f'?counter_to={counter_to_id}' if counter_to_id else ''))
 
         with transaction.atomic():
             trade = Trade.objects.create(sender=my_team, receiver=other_team, counter_to=counter_to)
-            for pid in give_ids:
+            for pid in give_player_ids:
                 TradeItem.objects.create(trade=trade, player_id=pid, direction='give')
-            for pid in receive_ids:
+            for cid in give_coach_ids:
+                TradeItem.objects.create(trade=trade, coach_id=cid, direction='give')
+            for pid in receive_player_ids:
                 TradeItem.objects.create(trade=trade, player_id=pid, direction='receive')
+            for cid in receive_coach_ids:
+                TradeItem.objects.create(trade=trade, coach_id=cid, direction='receive')
             if counter_to:
                 counter_to.status = 'amended'
                 counter_to.save()
@@ -1563,6 +1884,8 @@ def trade_create(request, team_id):
         'other_team': other_team,
         'my_players': my_players,
         'their_players': their_players,
+        'my_coach': my_coach,
+        'their_coach': their_coach,
         'counter_to': counter_to,
         'prefill_give': prefill_give,
         'prefill_receive': prefill_receive,
@@ -1576,8 +1899,8 @@ def trade_detail(request, trade_id):
     if team != trade.sender and team != trade.receiver and not team.is_commissioner:
         messages.error(request, 'You do not have access to this trade.')
         return redirect('league:dashboard')
-    give_items = trade.items.filter(direction='give').select_related('player__real_team')
-    receive_items = trade.items.filter(direction='receive').select_related('player__real_team')
+    give_items = trade.items.filter(direction='give').select_related('player__real_team', 'coach__real_team')
+    receive_items = trade.items.filter(direction='receive').select_related('player__real_team', 'coach__real_team')
     return render(request, 'league/trade_detail.html', {
         'trade': trade,
         'give_items': give_items,
@@ -1614,45 +1937,66 @@ def trade_respond(request, trade_id):
                 '/settings/'
             ))
             return redirect('league:trade_detail', trade_id=trade_id)
-        give_items = list(trade.items.filter(direction='give').select_related('player'))
-        receive_items = list(trade.items.filter(direction='receive').select_related('player'))
-        # Validate players still belong to the right teams
+        give_items = list(trade.items.filter(direction='give').select_related('player', 'coach'))
+        receive_items = list(trade.items.filter(direction='receive').select_related('player', 'coach'))
+        # Validate players/coaches still belong to the right teams
         for item in give_items:
-            if item.player.fantasy_team_id != trade.sender_id:
+            if item.player and item.player.fantasy_team_id != trade.sender_id:
                 trade.delete()
                 messages.error(request, f'{item.player} is no longer on {trade.sender}\'s roster. The trade has been cancelled.')
                 return redirect('league:roster', team_id=team.pk)
+            if item.coach and item.coach.fantasy_team_id != trade.sender_id:
+                trade.delete()
+                messages.error(request, f'{item.coach} is no longer on {trade.sender}\'s roster. The trade has been cancelled.')
+                return redirect('league:roster', team_id=team.pk)
         for item in receive_items:
-            if item.player.fantasy_team_id != trade.receiver_id:
+            if item.player and item.player.fantasy_team_id != trade.receiver_id:
                 trade.delete()
                 messages.error(request, f'{item.player} is no longer on your roster. The trade has been cancelled.')
                 return redirect('league:roster', team_id=team.pk)
+            if item.coach and item.coach.fantasy_team_id != trade.receiver_id:
+                trade.delete()
+                messages.error(request, f'{item.coach} is no longer on your roster. The trade has been cancelled.')
+                return redirect('league:roster', team_id=team.pk)
         today = datetime.date.today()
         current_week = Week.objects.filter(start_date__lte=today, end_date__gte=today).first()
-        # Snapshot both rosters before the trade so this week's stats are preserved.
         if current_week:
             _ensure_week_snapshot(trade.sender, current_week)
             _ensure_week_snapshot(trade.receiver, current_week)
-        # If it's the Sunday PM unlock window, attribute players to next Monday.
         if _is_sunday_unlock_window():
             new_since = today + datetime.timedelta(days=1)
         else:
             new_since = today
+        from league.scoring import refresh_coach_points as _refresh_coach
         with transaction.atomic():
             for item in give_items:
-                p = item.player
-                RosterSlot.objects.filter(player=p).update(player=None)
-                p.fantasy_team = trade.receiver
-                p.fantasy_team_since = new_since
-                p.save()
-                refresh_player_points(p)
+                if item.player:
+                    p = item.player
+                    RosterSlot.objects.filter(player=p).update(player=None)
+                    p.fantasy_team = trade.receiver
+                    p.fantasy_team_since = new_since
+                    p.save()
+                    refresh_player_points(p)
+                elif item.coach:
+                    c = item.coach
+                    c.fantasy_team = trade.receiver
+                    c.fantasy_team_since = new_since
+                    c.save()
+                    _refresh_coach(c)
             for item in receive_items:
-                p = item.player
-                RosterSlot.objects.filter(player=p).update(player=None)
-                p.fantasy_team = trade.sender
-                p.fantasy_team_since = new_since
-                p.save()
-                refresh_player_points(p)
+                if item.player:
+                    p = item.player
+                    RosterSlot.objects.filter(player=p).update(player=None)
+                    p.fantasy_team = trade.sender
+                    p.fantasy_team_since = new_since
+                    p.save()
+                    refresh_player_points(p)
+                elif item.coach:
+                    c = item.coach
+                    c.fantasy_team = trade.sender
+                    c.fantasy_team_since = new_since
+                    c.save()
+                    _refresh_coach(c)
             trade.status = 'accepted'
             trade.save()
         messages.success(request, 'Trade accepted.')
@@ -1682,7 +2026,7 @@ def commissioner_panel(request):
     real_team_count = RealTeam.objects.exclude(abbreviation='OOC').count()
     week_count = Week.objects.count()
     free_agent_count = Player.objects.filter(fantasy_team__isnull=True).count()
-    pending_disputes = PendingRequest.objects.filter(request_type__in=['stat_modify', 'missing_game'], status='pending').count()
+    pending_disputes = PendingRequest.objects.filter(request_type__in=['stat_modify', 'missing_game', 'coach_win'], status='pending').count()
     return render(request, 'league/commissioner/panel.html', {
         'team_count': team_count,
         'player_count': player_count,
@@ -1691,6 +2035,25 @@ def commissioner_panel(request):
         'free_agent_count': free_agent_count,
         'pending_disputes': pending_disputes,
     })
+
+
+@commissioner_required
+def recalculate_coaches(request):
+    if request.method != 'POST':
+        return redirect('league:commissioner_panel')
+    # Backfill RealGame.winner from existing pitching logs
+    updated = 0
+    for game in RealGame.objects.filter(winner__isnull=True):
+        winning_log = PitchingGameLog.objects.filter(
+            game=game, win=True
+        ).select_related('player__real_team').first()
+        if winning_log:
+            game.winner = winning_log.player.real_team
+            game.save(update_fields=['winner'])
+            updated += 1
+    refresh_all_coaches()
+    messages.success(request, f'Backfilled {updated} game winner(s) and recalculated all coach points.')
+    return redirect('league:commissioner_panel')
 
 
 @commissioner_required
@@ -1914,7 +2277,8 @@ def point_settings_view(request):
     if request.method == 'POST' and form.is_valid():
         ps = form.save()
         refresh_all_players(ps=ps)
-        messages.success(request, 'Point settings updated and player points recalculated.')
+        refresh_all_coaches(ps=ps)
+        messages.success(request, 'Point settings updated and player/coach points recalculated.')
         return redirect('league:commissioner_panel')
     return render(request, 'league/commissioner/point_settings.html', {
         'form': form,
@@ -2047,8 +2411,16 @@ def free_agent_board(request):
     fantasy_teams = FantasyTeam.objects.filter(is_commissioner=False)
     real_teams = RealTeam.objects.exclude(abbreviation='OOC')
 
+    # Unassigned coaches
+    free_coaches = Coach.objects.filter(fantasy_team__isnull=True).select_related('real_team').order_by('last_name', 'first_name')
+    coach_data = []
+    for c in free_coaches:
+        wins = RealGame.objects.filter(winner=c.real_team).count()
+        coach_data.append({'coach': c, 'wins': wins, 'season_points': ps.coach_win * wins})
+
     return render(request, 'league/commissioner/free_agent_board.html', {
         'player_data': player_data,
+        'coach_data': coach_data,
         'fantasy_teams': fantasy_teams,
         'real_teams': real_teams,
         'position_choices': POSITION_CHOICES,
@@ -2073,6 +2445,25 @@ def assign_player(request, player_id):
             player.save()
             Transaction.objects.create(transaction_type='add', fantasy_team=team, player=player, notes='Added by commissioner')
             messages.success(request, f'{player} assigned to {team.name}.')
+        else:
+            messages.error(request, 'No team selected.')
+    return redirect(request.POST.get('next', 'league:free_agent_board'))
+
+
+@commissioner_required
+def assign_coach(request, coach_id):
+    coach = get_object_or_404(Coach, pk=coach_id)
+    if request.method == 'POST':
+        team_id = request.POST.get('team_id')
+        if team_id:
+            team = get_object_or_404(FantasyTeam, pk=team_id, is_commissioner=False)
+            coach.fantasy_team = team
+            coach.fantasy_team_since = datetime.date.today()
+            coach.save()
+            Transaction.objects.create(transaction_type='add', fantasy_team=team, coach=coach, notes='Added by commissioner')
+            from league.scoring import refresh_coach_points
+            refresh_coach_points(coach)
+            messages.success(request, f'{coach} assigned to {team.name}.')
         else:
             messages.error(request, 'No team selected.')
     return redirect(request.POST.get('next', 'league:free_agent_board'))

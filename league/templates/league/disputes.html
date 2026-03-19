@@ -5,7 +5,12 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">My Disputes</h2>
-    <a href="{% url 'league:dispute_select_player' %}" class="btn btn-warning">+ New Dispute</a>
+    <div class="d-flex gap-2">
+        <a href="{% url 'league:dispute_select_player' %}" class="btn btn-warning">+ New Player Dispute</a>
+        {% for coach in my_coaches %}
+        <a href="{% url 'league:coach_dispute_select_game' coach.id %}" class="btn btn-success">+ New Coach Dispute ({{ coach.last_name }})</a>
+        {% endfor %}
+    </div>
 </div>
 
 {% if disputes %}
@@ -27,7 +32,13 @@
             {% for d in disputes %}
             <tr>
                 <td class="text-nowrap">{{ d.submitted_at|date:"M d, Y" }}</td>
-                <td><a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a></td>
+                <td>
+                    {% if d.request_type == 'coach_win' %}
+                        {{ d.coach.first_name }} {{ d.coach.last_name }}
+                    {% else %}
+                        <a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a>
+                    {% endif %}
+                </td>
                 <td>
                     {% if d.request_type == 'missing_game' %}
                         {{ d.proposed_data.date }} vs {{ d.proposed_data.opponent }}
@@ -36,7 +47,13 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if d.request_type == 'missing_game' %}
+                    {% if d.request_type == 'coach_win' %}
+                        {% if d.stat_type == 'add_win' %}
+                            <span class="badge bg-success">Coach Add Win</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Coach Remove Win</span>
+                        {% endif %}
+                    {% elif d.request_type == 'missing_game' %}
                         <span class="badge bg-info text-dark">Missing Game</span>
                     {% elif d.stat_type == 'remove' %}
                         <span class="badge bg-danger">Remove Game</span>

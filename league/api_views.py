@@ -54,7 +54,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .models import HittingGameLog, PitchingGameLog, Player, RealGame, RealTeam
-from .scoring import refresh_player_points
+from .scoring import refresh_player_points, refresh_all_coaches
 
 logger = logging.getLogger('league')
 
@@ -98,6 +98,7 @@ def ingest(request):
     warnings = []
     games_processed = 0
     affected_players = set()
+    affected_games = set()
 
     for idx, game_data in enumerate(games_data):
         prefix = f'games[{idx}]'
@@ -181,10 +182,22 @@ def ingest(request):
                     player=player, game=game, defaults=pitch_defaults
                 )
                 affected_players.add(player.pk)
+                affected_games.add(game.pk)
             except Exception as exc:
                 warnings.append(f'{prefix}.pitching {player}: {exc}')
 
         games_processed += 1
+
+    # Derive winner for each affected game
+    for game_pk in affected_games:
+        try:
+            game = RealGame.objects.get(pk=game_pk)
+            winning_log = PitchingGameLog.objects.filter(game=game, win=True).select_related('player__real_team').first()
+            if winning_log:
+                game.winner = winning_log.player.real_team
+                game.save(update_fields=['winner'])
+        except Exception as exc:
+            logger.warning('Could not set winner for game %s: %s', game_pk, exc)
 
     # Refresh cached points for every touched player
     for pk in affected_players:
@@ -192,6 +205,11 @@ def ingest(request):
             refresh_player_points(Player.objects.get(pk=pk))
         except Exception as exc:
             logger.warning('refresh_player_points failed for player %s: %s', pk, exc)
+
+    try:
+        refresh_all_coaches()
+    except Exception as exc:
+        logger.warning('refresh_all_coaches failed: %s', exc)
 
     logger.info('Ingest: %d games processed, %d players refreshed, %d warnings',
                 games_processed, len(affected_players), len(warnings))

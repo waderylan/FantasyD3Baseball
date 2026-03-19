@@ -53,9 +53,17 @@ urlpatterns = [
     path('disputes/<int:player_id>/<int:game_id>/submit/', views.submit_dispute, name='submit_dispute'),
     path('disputes/<int:player_id>/missing/', views.submit_missing_game_dispute, name='submit_missing_game_dispute'),
     path('disputes/<int:dispute_id>/cancel/', views.cancel_dispute, name='cancel_dispute'),
+    path('disputes/coach/<int:coach_id>/', views.coach_dispute_select_game, name='coach_dispute_select_game'),
+    path('disputes/coach/<int:coach_id>/<int:game_id>/submit/', views.submit_coach_win_dispute, name='submit_coach_win_dispute'),
     path('commissioner/disputes/', views.commissioner_disputes, name='commissioner_disputes'),
     path('commissioner/disputes/<int:dispute_id>/review/', views.review_dispute, name='review_dispute'),
     path('commissioner/disputes/<int:dispute_id>/review-missing/', views.review_missing_game, name='review_missing_game'),
+    path('commissioner/disputes/<int:dispute_id>/review-coach-win/', views.review_coach_win_dispute, name='review_coach_win_dispute'),
+
+    # Coaches
+    path('coaches/<int:coach_id>/', views.coach_detail, name='coach_detail'),
+    path('coaches/<int:coach_id>/add/', views.member_add_coach, name='member_add_coach'),
+    path('coaches/<int:coach_id>/drop/', views.member_drop_coach, name='member_drop_coach'),
 
     # Players / Free Agents (public)
     path('players/', views.players_list, name='players'),
@@ -73,6 +81,7 @@ urlpatterns = [
     # Commissioner
     path('commissioner/', views.commissioner_panel, name='commissioner_panel'),
     path('commissioner/scraper/', views.run_scraper, name='run_scraper'),
+    path('commissioner/recalculate-coaches/', views.recalculate_coaches, name='recalculate_coaches'),
     path('commissioner/teams/', views.manage_teams, name='manage_teams'),
     path('commissioner/teams/create/', views.team_create, name='team_create'),
     path('commissioner/teams/<int:team_id>/edit/', views.team_edit, name='team_edit'),
@@ -97,5 +106,6 @@ urlpatterns = [
     path('commissioner/reset/', views.reset_league, name='reset_league'),
     path('commissioner/free-agents/', views.free_agent_board, name='free_agent_board'),
     path('commissioner/free-agents/<int:player_id>/assign/', views.assign_player, name='assign_player'),
+    path('commissioner/free-agents/coach/<int:coach_id>/assign/', views.assign_coach, name='assign_coach'),
     path('commissioner/players/<int:player_id>/drop/', views.drop_player, name='drop_player'),
 ]

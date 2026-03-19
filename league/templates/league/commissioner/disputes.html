@@ -26,7 +26,13 @@
             <tr>
                 <td class="text-nowrap">{{ d.submitted_at|date:"M d, Y" }}</td>
                 <td>{{ d.submitted_by }}</td>
-                <td><a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a></td>
+                <td>
+                    {% if d.request_type == 'coach_win' %}
+                        {{ d.coach.first_name }} {{ d.coach.last_name }}
+                    {% else %}
+                        <a href="{% url 'league:player_detail' d.player.id %}">{{ d.player.first_name }} {{ d.player.last_name }}</a>
+                    {% endif %}
+                </td>
                 <td>
                     {% if d.request_type == 'missing_game' %}
                         {{ d.proposed_data.date }} vs {{ d.proposed_data.opponent }}
@@ -35,7 +41,13 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if d.request_type == 'missing_game' %}
+                    {% if d.request_type == 'coach_win' %}
+                        {% if d.stat_type == 'add_win' %}
+                            <span class="badge bg-success">Coach Add Win</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Coach Remove Win</span>
+                        {% endif %}
+                    {% elif d.request_type == 'missing_game' %}
                         <span class="badge bg-info text-dark">Missing Game</span>
                     {% elif d.stat_type == 'remove' %}
                         <span class="badge bg-danger">Remove Game</span>
@@ -61,6 +73,12 @@
                         <a href="{% url 'league:review_missing_game' d.id %}" class="btn btn-sm btn-primary">Review</a>
                         {% else %}
                         <a href="{% url 'league:review_missing_game' d.id %}" class="btn btn-sm btn-outline-secondary">View</a>
+                        {% endif %}
+                    {% elif d.request_type == 'coach_win' %}
+                        {% if d.status == 'pending' %}
+                        <a href="{% url 'league:review_coach_win_dispute' d.id %}" class="btn btn-sm btn-primary">Review</a>
+                        {% else %}
+                        <a href="{% url 'league:review_coach_win_dispute' d.id %}" class="btn btn-sm btn-outline-secondary">View</a>
                         {% endif %}
                     {% else %}
                         {% if d.status == 'pending' %}

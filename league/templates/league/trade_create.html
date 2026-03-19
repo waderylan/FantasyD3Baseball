@@ -16,16 +16,19 @@
 
     <div class="row g-4 mb-4">
         <div class="col-md-6">
-            <h5>Players You Give</h5>
+            <h5>You Give</h5>
             <div id="give-container">
                 {% if prefill_give %}
-                    {% for pid in prefill_give %}
+                    {% for val in prefill_give %}
                     <div class="trade-row mb-2 d-flex gap-2">
                         <select name="give_players" class="form-select">
-                            <option value="">-- Select player --</option>
+                            <option value="">-- Select player or coach --</option>
                             {% for p in my_players %}
-                            <option value="{{ p.pk }}" {% if p.pk == pid %}selected{% endif %}>{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                            <option value="p_{{ p.pk }}" {% if val == "p_"|add:p.pk|stringformat:"d" %}selected{% endif %}>{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
                             {% endfor %}
+                            {% if my_coach %}
+                            <option value="c_{{ my_coach.pk }}" {% if val == "c_"|add:my_coach.pk|stringformat:"d" %}selected{% endif %}>{{ my_coach.last_name }}, {{ my_coach.first_name }} (MGR)</option>
+                            {% endif %}
                         </select>
                         <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
                     </div>
@@ -33,29 +36,35 @@
                 {% else %}
                 <div class="trade-row mb-2 d-flex gap-2">
                     <select name="give_players" class="form-select">
-                        <option value="">-- Select player --</option>
+                        <option value="">-- Select player or coach --</option>
                         {% for p in my_players %}
-                        <option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                        <option value="p_{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
                         {% endfor %}
+                        {% if my_coach %}
+                        <option value="c_{{ my_coach.pk }}">{{ my_coach.last_name }}, {{ my_coach.first_name }} (MGR)</option>
+                        {% endif %}
                     </select>
                     <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
                 </div>
                 {% endif %}
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-give">+ Add Player</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-give">+ Add</button>
         </div>
 
         <div class="col-md-6">
-            <h5>Players You Receive</h5>
+            <h5>You Receive</h5>
             <div id="receive-container">
                 {% if prefill_receive %}
-                    {% for pid in prefill_receive %}
+                    {% for val in prefill_receive %}
                     <div class="trade-row mb-2 d-flex gap-2">
                         <select name="receive_players" class="form-select">
-                            <option value="">-- Select player --</option>
+                            <option value="">-- Select player or coach --</option>
                             {% for p in their_players %}
-                            <option value="{{ p.pk }}" {% if p.pk == pid %}selected{% endif %}>{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                            <option value="p_{{ p.pk }}" {% if val == "p_"|add:p.pk|stringformat:"d" %}selected{% endif %}>{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
                             {% endfor %}
+                            {% if their_coach %}
+                            <option value="c_{{ their_coach.pk }}" {% if val == "c_"|add:their_coach.pk|stringformat:"d" %}selected{% endif %}>{{ their_coach.last_name }}, {{ their_coach.first_name }} (MGR)</option>
+                            {% endif %}
                         </select>
                         <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
                     </div>
@@ -63,16 +72,19 @@
                 {% else %}
                 <div class="trade-row mb-2 d-flex gap-2">
                     <select name="receive_players" class="form-select">
-                        <option value="">-- Select player --</option>
+                        <option value="">-- Select player or coach --</option>
                         {% for p in their_players %}
-                        <option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
+                        <option value="p_{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>
                         {% endfor %}
+                        {% if their_coach %}
+                        <option value="c_{{ their_coach.pk }}">{{ their_coach.last_name }}, {{ their_coach.first_name }} (MGR)</option>
+                        {% endif %}
                     </select>
                     <button type="button" class="btn btn-outline-danger btn-sm remove-btn" style="white-space:nowrap">Remove</button>
                 </div>
                 {% endif %}
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-receive">+ Add Player</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-receive">+ Add</button>
         </div>
     </div>
 
@@ -84,8 +96,8 @@
 </form>
 
 <script>
-const giveOptions = `<option value="">-- Select player --</option>{% for p in my_players %}<option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>{% endfor %}`;
-const receiveOptions = `<option value="">-- Select player --</option>{% for p in their_players %}<option value="{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>{% endfor %}`;
+const giveOptions = `<option value="">-- Select player or coach --</option>{% for p in my_players %}<option value="p_{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>{% endfor %}{% if my_coach %}<option value="c_{{ my_coach.pk }}">{{ my_coach.last_name }}, {{ my_coach.first_name }} (MGR)</option>{% endif %}`;
+const receiveOptions = `<option value="">-- Select player or coach --</option>{% for p in their_players %}<option value="p_{{ p.pk }}">{{ p.last_name }}, {{ p.first_name }} ({{ p.position }})</option>{% endfor %}{% if their_coach %}<option value="c_{{ their_coach.pk }}">{{ their_coach.last_name }}, {{ their_coach.first_name }} (MGR)</option>{% endif %}`;
 
 function refreshOptions(containerId) {
     const container = document.getElementById(containerId);
@@ -130,11 +142,9 @@ function makeRow(containerId, selectName, optionsHtml) {
     refreshOptions(containerId);
 }
 
-// Wire up all initial rows
 document.querySelectorAll('#give-container .trade-row').forEach(r => wireRow(r, 'give-container'));
 document.querySelectorAll('#receive-container .trade-row').forEach(r => wireRow(r, 'receive-container'));
 
-// Run once on load so prefilled values hide options in sibling dropdowns
 refreshOptions('give-container');
 refreshOptions('receive-container');
 

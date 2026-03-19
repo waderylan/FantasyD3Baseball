@@ -221,4 +221,49 @@
 </div>
 
 {% endwith %}
+
+{# Coaches section #}
+{% if coach_rows %}
+<h5>Coaches</h5>
+<div class="table-responsive mb-4">
+    <table class="table table-sm table-striped align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Coach</th>
+                <th>School</th>
+                <th class="text-end">W</th>
+                <th class="text-end">Points</th>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<th></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for cr in coach_rows %}
+            <tr>
+                <td>
+                    <span class="badge me-1" style="background-color: #6f42c1;">MGR</span>
+                    <a href="{% url 'league:coach_detail' cr.coach.id %}" class="text-decoration-none">
+                        {{ cr.coach.last_name }}, {{ cr.coach.first_name }}
+                    </a>
+                </td>
+                <td>{{ cr.coach.real_team.abbreviation }}</td>
+                <td class="text-end">{{ cr.wins }}</td>
+                <td class="text-end fw-bold">{{ cr.points|pts_format }}</td>
+                {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
+                <td>
+                    <form method="post" action="{% url 'league:member_drop_coach' cr.coach.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Drop {{ cr.coach.first_name }} {{ cr.coach.last_name }}?')">
+                            Drop
+                        </button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}

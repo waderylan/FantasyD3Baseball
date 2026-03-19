@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load league_extras %}
+
+{% block title %}{{ coach }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-2">
+    <div>
+        <h2 class="mb-1">{{ coach.first_name }} {{ coach.last_name }}</h2>
+        <p class="mb-0">
+            <span class="badge" style="background-color: #6f42c1;">MGR</span> |
+            <strong>Real Team:</strong> {{ coach.real_team.name }}
+            {% if coach.fantasy_team %} | <strong>Fantasy Team:</strong> {{ coach.fantasy_team }}{% endif %}
+        </p>
+    </div>
+    {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
+        {% if not coach.fantasy_team and not user_has_coach %}
+        <form method="post" action="{% url 'league:member_add_coach' coach.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-success">+ Add to My Team</button>
+        </form>
+        {% elif coach.fantasy_team == request.fantasy_team %}
+        <form method="post" action="{% url 'league:member_drop_coach' coach.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'league:roster' request.fantasy_team.id %}">
+            <button type="submit" class="btn btn-danger"
+                onclick="return confirm('Drop {{ coach.first_name }} {{ coach.last_name }} to free agency?')">
+                Drop
+            </button>
+        </form>
+        {% endif %}
+    {% endif %}
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Game</th>
+                <th class="text-center">W</th>
+                <th class="text-end">Pts</th>
+                {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in log_data %}
+            <tr>
+                <td>{{ item.game.date }}</td>
+                <td>{{ item.game }}</td>
+                <td class="text-center">W</td>
+                <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
+                {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
+                <td><a href="{% url 'league:submit_coach_win_dispute' coach.id item.game.id %}" class="btn btn-sm btn-outline-warning">Dispute</a></td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if request.fantasy_team and not request.fantasy_team.is_commissioner %}5{% else %}4{% endif %}" class="text-center">No wins recorded.</td>
+            </tr>
+            {% endfor %}
+            {% if log_data %}
+            <tr class="table-dark fw-bold">
+                <td colspan="2">Totals</td>
+                <td class="text-center">{{ total_wins }}W</td>
+                <td class="text-end">{{ total_points|pts_format }}</td>
+                {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}<td></td>{% endif %}
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <a href="{% url 'league:players' %}" class="btn btn-secondary">Back to Players</a>
+    {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
+    <a href="{% url 'league:coach_dispute_select_game' coach.id %}" class="btn btn-outline-warning">Report Missing Win</a>
+    {% endif %}
+</div>
+{% endblock %}

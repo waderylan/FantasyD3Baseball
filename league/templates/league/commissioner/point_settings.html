@@ -44,6 +44,23 @@
         </div>
     </div>
 
+    <div class="card mb-4">
+        <div class="card-header text-white" style="background-color:#6f42c1;"><h5 class="mb-0">Coach Points</h5></div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form %}
+                {% if field.name == 'coach_win' %}
+                <div class="col-md-3 col-6">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% render_field field class="form-control" %}
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
     <button type="submit" class="btn btn-primary">Save Point Settings</button>
     <a href="{% url 'league:commissioner_panel' %}" class="btn btn-secondary">Cancel</a>
 </form>
