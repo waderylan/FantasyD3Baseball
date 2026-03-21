@@ -1,0 +1,46 @@
+name: Scrape and Send Stats
+
+on:
+  schedule:
+    # 6 PM, 7 PM, 8 PM, 9 PM, 10 PM EDT (UTC-4) = 22, 23, 0, 1, 2 UTC
+    - cron: '0 22,23,0,1,2 * * *'
+  workflow_dispatch: # allow manual trigger from GitHub UI
+
+jobs:
+  scrape-and-send:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install Playwright Chromium
+        run: uv run playwright install chromium --with-deps
+
+      - name: Set up Django env
+        run: |
+          echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
+          echo "DEBUG=False" >> .env
+          echo "ALLOWED_HOSTS=localhost" >> .env
+
+      - name: Migrate database
+        run: uv run python manage.py migrate --run-syncdb
+
+      - name: Scrape stats (last 3 days)
+        run: uv run python manage.py scrape_stats
+
+      - name: Export and send stats
+        run: |
+          START=$(date -d "3 days ago" +%m/%d/%Y)
+          END=$(date +%m/%d/%Y)
+          uv run python manage.py export_stats \
+            --start-date "$START" \
+            --end-date "$END" \
+            --send \
+            --url https://rylanwwade.pythonanywhere.com/ \
+            --secret "${{ secrets.INGEST_SECRET }}"
