@@ -9,20 +9,21 @@
 </div>
 
 {# --- Current Roster --- #}
-<h5 class="mb-2">Current Roster <span class="badge bg-secondary">{{ players.count }}</span></h5>
+<h5 class="mb-2">Current Roster <span class="badge bg-secondary">{{ players_with_slots|length }}</span></h5>
 <div class="table-responsive mb-4">
     <table class="table table-striped table-sm align-middle">
         <thead class="table-dark">
             <tr>
                 <th>Name</th>
                 <th>Pos</th>
+                <th>Slot</th>
                 <th>School</th>
                 <th>Class</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
-            {% for player in players %}
+            {% for player, eligible_slots in players_with_slots %}
             <tr>
                 <td>
                     <a href="{% url 'league:player_detail' player.id %}" class="text-decoration-none">
@@ -33,6 +34,21 @@
                     <span class="badge {% if player.is_pitcher %}bg-danger{% else %}bg-primary{% endif %}">
                         {{ player.position }}
                     </span>
+                </td>
+                <td>
+                    <form method="post" action="{% url 'league:commissioner_reassign_slot' player.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <select name="slot_id" class="form-select form-select-sm d-inline-block w-auto"
+                                onchange="this.form.submit()">
+                            {% for slot in eligible_slots %}
+                            <option value="{{ slot.id }}"
+                                {% if player.roster_slot.id == slot.id %}selected{% endif %}>
+                                {{ slot.slot_label }}{% if slot.player and slot.player != player %} ({{ slot.player.last_name }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
                 </td>
                 <td>{{ player.real_team.abbreviation }}</td>
                 <td>{{ player.class_year|default:"-" }}</td>
@@ -52,7 +68,7 @@
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="text-center text-muted">No players on this team.</td></tr>
+            <tr><td colspan="6" class="text-center text-muted">No players on this team.</td></tr>
             {% endfor %}
         </tbody>
     </table>

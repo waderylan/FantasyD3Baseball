@@ -108,4 +108,5 @@ urlpatterns = [
     path('commissioner/free-agents/<int:player_id>/assign/', views.assign_player, name='assign_player'),
     path('commissioner/free-agents/coach/<int:coach_id>/assign/', views.assign_coach, name='assign_coach'),
     path('commissioner/players/<int:player_id>/drop/', views.drop_player, name='drop_player'),
+    path('commissioner/players/<int:player_id>/reassign-slot/', views.commissioner_reassign_slot, name='commissioner_reassign_slot'),
 ]

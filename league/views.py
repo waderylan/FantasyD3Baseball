@@ -2186,7 +2186,7 @@ def team_delete(request, team_id):
 @commissioner_required
 def commissioner_team_roster(request, team_id):
     team = get_object_or_404(FantasyTeam, pk=team_id, is_commissioner=False)
-    players = Player.objects.filter(fantasy_team=team).select_related('real_team').order_by('last_name', 'first_name')
+    players = Player.objects.filter(fantasy_team=team).select_related('real_team', 'roster_slot').order_by('last_name', 'first_name')
     other_teams = FantasyTeam.objects.filter(is_commissioner=False).exclude(pk=team_id)
 
     # All players not on this team (free agents + players on other teams) for the "add player" search
@@ -2195,13 +2195,62 @@ def commissioner_team_roster(request, team_id):
     if search:
         available_players = available_players.filter(_player_name_q(search))
 
+    RosterSlot.create_for_team(team)
+    slots = list(RosterSlot.objects.filter(fantasy_team=team).select_related('player').order_by('slot_type', 'slot_number'))
+    players_with_slots = [
+        (p, [s for s in slots if p.position in SLOT_ELIGIBLE[s.slot_type]])
+        for p in players
+    ]
+
     return render(request, 'league/commissioner/commissioner_team_roster.html', {
         'viewed_team': team,
-        'players': players,
+        'players_with_slots': players_with_slots,
         'other_teams': other_teams,
         'available_players': available_players,
         'search': search,
     })
+
+
+@commissioner_required
+def commissioner_reassign_slot(request, player_id):
+    player = get_object_or_404(Player, pk=player_id)
+    if request.method == 'POST' and player.fantasy_team:
+        target_slot_id = request.POST.get('slot_id')
+        try:
+            target_slot = RosterSlot.objects.get(pk=int(target_slot_id), fantasy_team=player.fantasy_team)
+        except (RosterSlot.DoesNotExist, TypeError, ValueError):
+            messages.error(request, 'Invalid slot.')
+            return redirect(request.POST.get('next', 'league:manage_teams'))
+
+        try:
+            current_slot = player.roster_slot
+        except RosterSlot.DoesNotExist:
+            current_slot = None
+
+        if target_slot == current_slot:
+            return redirect(request.POST.get('next', 'league:manage_teams'))
+
+        displaced_player = target_slot.player
+
+        with transaction.atomic():
+            # Clear both slots first to avoid OneToOne conflicts
+            if current_slot:
+                current_slot.player = None
+                current_slot.save()
+            target_slot.player = None
+            target_slot.save()
+
+            # Assign player to target slot
+            target_slot.player = player
+            target_slot.save()
+
+            # Put displaced player in the vacated slot (swap)
+            if displaced_player and current_slot:
+                current_slot.player = displaced_player
+                current_slot.save()
+
+        messages.success(request, f'{player} moved to {target_slot.slot_label}.')
+    return redirect(request.POST.get('next', 'league:manage_teams'))
 
 
 @commissioner_required
