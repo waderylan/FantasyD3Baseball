@@ -31,16 +31,20 @@ jobs:
       - name: Migrate database
         run: uv run python manage.py migrate --run-syncdb
 
-      - name: Scrape stats (last 3 days)
-        run: uv run python manage.py scrape_stats
+      - name: Load teams and players
+        run: uv run python manage.py loaddata league/fixtures/bootstrap.json
+
+      - name: Scrape stats (today)
+        run: |
+          TODAY=$(date +%m/%d/%Y)
+          uv run python manage.py scrape_stats --start-date "$TODAY" --end-date "$TODAY"
 
       - name: Export and send stats
         run: |
-          START=$(date -d "3 days ago" +%m/%d/%Y)
-          END=$(date +%m/%d/%Y)
+          TODAY=$(date +%m/%d/%Y)
           uv run python manage.py export_stats \
-            --start-date "$START" \
-            --end-date "$END" \
+            --start-date "$TODAY" \
+            --end-date "$TODAY" \
             --send \
             --url https://rylanwwade.pythonanywhere.com/ \
             --secret "${{ secrets.INGEST_SECRET }}"
