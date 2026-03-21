@@ -41,12 +41,13 @@ jobs:
           uv run python manage.py scrape_stats --start-date "$YESTERDAY" --end-date "$TODAY"
 
       - name: Export and send stats
+        env:
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          INGEST_URL: https://rylanwwade.pythonanywhere.com
         run: |
           YESTERDAY=$(date -d 'yesterday' +%m/%d/%Y)
           TODAY=$(date +%m/%d/%Y)
           uv run python manage.py export_stats \
             --start-date "$YESTERDAY" \
             --end-date "$TODAY" \
-            --send \
-            --url https://rylanwwade.pythonanywhere.com/ \
-            --secret "${{ secrets.INGEST_SECRET }}"
+            --send
