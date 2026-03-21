@@ -58,12 +58,6 @@ from .scoring import refresh_player_points, refresh_all_coaches
 
 logger = logging.getLogger('league')
 
-def _normalize_url(url: str) -> str:
-    """Truncate URL at the first % to canonicalize Liberty League boxscore URLs."""
-    idx = url.find('%')
-    return url[:idx] if idx != -1 else url
-
-
 # Required top-level key; hitting and pitching are optional per game
 _REQUIRED_GAME_FIELDS = {'date', 'home_team', 'away_team'}
 
@@ -136,8 +130,7 @@ def ingest(request):
             continue
 
         game_number = int(game_data.get('game_number', 1))
-        raw_url = game_data.get('source_url') or None
-        source_url = _normalize_url(raw_url) if raw_url else None
+        source_url = game_data.get('source_url') or None
 
         # Upsert RealGame
         try:

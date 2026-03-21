@@ -75,14 +75,6 @@ _PDF_NOTES_STAT_MAP = {
 }
 
 
-def _normalize_url(url: str) -> str:
-    """Truncate URL at the first % to canonicalize Liberty League boxscore URLs.
-    Two calendar links that encode the same game ID differently share a common
-    prefix before the first %-encoded character."""
-    idx = url.find('%')
-    return url[:idx] if idx != -1 else url
-
-
 def _parse_pdf_notes(text):
     """
     Parse the notes section below batting tables in PDF box scores.
@@ -903,10 +895,7 @@ class Command(BaseCommand):
 
         # Look up by source URL first — ensures re-runs find the same game
         # and doubleheaders (same date+teams, different URL) get separate entries.
-        # Normalize the URL to handle Liberty League calendar variants that encode
-        # the same game ID differently (truncate at first % for a canonical form).
-        canonical_url = _normalize_url(url)
-        game = RealGame.objects.filter(source_url=canonical_url).first()
+        game = RealGame.objects.filter(source_url=url).first()
         if not game:
             existing_count = RealGame.objects.filter(
                 date=game_date, home_team=home_team, away_team=away_team
@@ -916,7 +905,7 @@ class Command(BaseCommand):
                 home_team=home_team,
                 away_team=away_team,
                 game_number=existing_count + 1,
-                source_url=canonical_url,
+                source_url=url,
             )
 
         if not force:
