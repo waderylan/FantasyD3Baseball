@@ -13,6 +13,41 @@ from league.models import RealGame
 ENDPOINT_PATH = '/api/ingest/'
 
 
+def _game_stat_fingerprint(game):
+    """Return a frozenset-based fingerprint of all player stats for a game.
+    Two games with identical fingerprints have the exact same player stat lines
+    and are almost certainly duplicates scraped from the same box score."""
+    hitting = frozenset(
+        (log.player_id, log.ab, log.runs, log.hits, log.doubles, log.triples,
+         log.hr, log.rbi, log.bb, log.so, log.sb, log.cs, log.hbp)
+        for log in game.hitting_logs.all()
+    )
+    pitching = frozenset(
+        (log.player_id, log.outs, log.hits, log.runs, log.er, log.bb, log.so,
+         log.hr, log.win, log.loss, log.save_game)
+        for log in game.pitching_logs.all()
+    )
+    return (hitting, pitching)
+
+
+def _dedupe_games(games):
+    """Remove games whose stats are an exact duplicate of a lower-numbered game
+    for the same date/teams. Real doubleheaders have different stats; duplicate
+    Liberty League calendar URLs produce identical stats."""
+    seen = {}   # (date, home_team_id, away_team_id) -> list of fingerprints
+    result = []
+    for game in sorted(games, key=lambda g: (g.date, g.home_team_id, g.away_team_id, g.game_number)):
+        key = (game.date, game.home_team_id, game.away_team_id)
+        fp = _game_stat_fingerprint(game)
+        if key not in seen:
+            seen[key] = []
+        if fp in seen[key]:
+            continue  # exact duplicate — skip
+        seen[key].append(fp)
+        result.append(game)
+    return result
+
+
 class Command(BaseCommand):
     help = 'Export scraped stats from local DB as JSON, optionally POSTing to the ingest API.'
 
@@ -79,6 +114,16 @@ class Command(BaseCommand):
                 self.style.WARNING(f'No games found between {start} and {end}.')
             )
 
+        # Remove games whose stats are exact duplicates of another game for the
+        # same date/teams (Liberty League lists some games under two calendar URLs).
+        all_games = list(games)
+        deduped = _dedupe_games(all_games)
+        skipped = len(all_games) - len(deduped)
+        if skipped:
+            self.stderr.write(
+                self.style.WARNING(f'Skipped {skipped} duplicate game(s) (identical stats, same date/teams).')
+            )
+
         # Build payload
         payload = {
             'games': [
@@ -127,7 +172,7 @@ class Command(BaseCommand):
                         for log in game.pitching_logs.all()
                     ],
                 }
-                for game in games
+                for game in deduped
             ]
         }
 
