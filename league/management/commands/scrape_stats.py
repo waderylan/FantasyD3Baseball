@@ -86,6 +86,11 @@ def _parse_pdf_notes(text):
     Returns {(first_lower, last_lower): {field: count}}.
     Covers both teams — callers look up by player key.
     """
+    # Two-column PDFs (e.g. Liberty League) merge left- and right-column notes
+    # onto the same line: "SB: Foo (1) HR: Bar (1)". Insert newlines before any
+    # embedded stat header so each stat gets its own line before joining.
+    text = re.sub(r'(?<=\))\s+([A-Z0-9]{2,4}\s*:)', r'\n\1', text)
+
     # Join wrapped lines: a line that doesn't start with "WORD:" is a continuation
     stat_start = re.compile(r'^[A-Z0-9]{1,4}\s*:', re.MULTILINE)
     joined_lines = []
@@ -1276,8 +1281,17 @@ class Command(BaseCommand):
             # Notes are authoritative for these fields — take max so we don't
             # lose a value already found in the table.
             if pdf_notes:
-                note_key = (player.first_name.lower(), player.last_name.lower())
-                for field, val in pdf_notes.get(note_key, {}).items():
+                first_l = player.first_name.lower()
+                last_l  = player.last_name.lower()
+                # Try full name first, then "A." / "A" initial variants in case
+                # the notes used an abbreviated first name (e.g. "A. Coombes").
+                note_data = (
+                    pdf_notes.get((first_l, last_l))
+                    or pdf_notes.get((first_l[0] + '.', last_l))
+                    or pdf_notes.get((first_l[0], last_l))
+                    or {}
+                )
+                for field, val in note_data.items():
                     if   field == 'doubles': doubles = max(doubles, val)
                     elif field == 'triples': triples = max(triples, val)
                     elif field == 'hr':      hr      = max(hr,      val)
