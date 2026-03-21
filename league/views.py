@@ -374,11 +374,14 @@ def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
     coach_slots = []
     for coach in Coach.objects.filter(fantasy_team=team).select_related('real_team'):
         pts = calc_coach_points_for_period(coach, week.start_date, week.end_date, ps, excluded_dates=excluded_dates)
-        wins = RealGame.objects.filter(
+        wins_qs = RealGame.objects.filter(
             winner=coach.real_team,
             date__gte=week.start_date,
             date__lte=week.end_date,
-        ).count()
+        )
+        if excluded_dates:
+            wins_qs = wins_qs.exclude(date__in=excluded_dates)
+        wins = wins_qs.count()
         coach_slots.append({'coach': coach, 'points': pts, 'wins': wins})
 
     coach_total_wins = sum(c['wins'] for c in coach_slots)
