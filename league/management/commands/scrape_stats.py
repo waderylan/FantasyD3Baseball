@@ -149,9 +149,10 @@ def _parse_name(raw):
     """
     'Last, First'      -> ('First', 'Last')
     'First Last'       -> ('First', 'Last')
-    'J.COLLINS 1b'     -> ('J', 'COLLINS')   # Bard all-caps opponent format
-    'M.O\'NEILL cf'    -> ('M', "O'NEILL")
-    'LSCHWARTZMAN lf'  -> ('L', 'SCHWARTZMAN')
+    'J.COLLINS 1b'       -> ('J', 'COLLINS')   # Bard all-caps opponent format
+    'M.O\'NEILL cf'      -> ('M', "O'NEILL")
+    'LSCHWARTZMAN lf'    -> ('L', 'SCHWARTZMAN')
+    'S. Walker III dh'   -> ('S.', 'Walker')   # suffix + position in same cell
     Returns (None, None) on failure.
     """
     raw = str(raw or '').strip()
@@ -168,7 +169,13 @@ def _parse_name(raw):
     parts = raw.split()
     while len(parts) > 1 and _POS.match(parts[-1]):
         parts.pop()
+    while len(parts) > 1 and _POS.match(parts[0]):
+        parts.pop(0)
     raw = ' '.join(parts)
+
+    # Re-apply suffix strip after position is removed (e.g. "S. Walker III dh"
+    # → pos strip removes "dh" → "S. Walker III" → this strips "III")
+    raw = re.sub(r'\s+(?:jr\.?|sr\.?|ii+|iv|vi?)$', '', raw, flags=re.I).strip()
 
     if ',' in raw:
         parts = raw.split(',', 1)
@@ -1229,7 +1236,16 @@ class Command(BaseCommand):
                     continue
                 cell = cells[idx]
                 anchor = cell.find('a') or cell.find('span')
-                txt = (anchor.get_text(strip=True) if anchor else cell.get_text(strip=True)).strip()
+                if anchor:
+                    atxt = anchor.get_text(strip=True).strip()
+                    # If the anchor text alone parses as a complete name, use it.
+                    # Otherwise fall back to full cell text — handles cases where
+                    # the first initial sits outside the anchor, e.g.:
+                    #   <td>S. <a href="...">Walker III</a> dh</td>
+                    af, al = _parse_name(atxt)
+                    txt = atxt if (af and al) else ' '.join(cell.get_text(' ', strip=True).split())
+                else:
+                    txt = ' '.join(cell.get_text(' ', strip=True).split())
                 if txt and not pos_pat.match(txt.lower()):
                     name_raw = txt
                     break
