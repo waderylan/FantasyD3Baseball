@@ -28,7 +28,7 @@ from .scoring import (
     resolve_matchup, get_standings, get_player_weekly_breakdown,
     calc_hitting_points, calc_pitching_points, calc_player_points_for_period,
     refresh_player_points, refresh_all_players, calc_coach_points_for_period,
-    refresh_all_coaches,
+    refresh_all_coaches, _owned_start,
 )
 from .schedule import generate_round_robin
 
@@ -356,8 +356,11 @@ def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
     for slot in slots_qs:
         player = slot.player
         if player:
-            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded_dates)
-            stats = _week_player_stats(player, week.start_date, week.end_date, excluded_dates=excluded_dates)
+            # For snapshot weeks, fantasy_team_since reflects current ownership which
+            # may post-date the week (traded away and re-added later) — use week start as-is.
+            start = _owned_start(player, week.start_date) if not use_snapshot else week.start_date
+            pts = calc_player_points_for_period(player, start, week.end_date, ps, excluded_dates=excluded_dates)
+            stats = _week_player_stats(player, start, week.end_date, excluded_dates=excluded_dates)
             slotted_player_ids.add(player.pk)
         else:
             pts = Decimal('0')
@@ -380,8 +383,9 @@ def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
         # Include rostered players not assigned to any slot (live view only)
         unslotted = Player.objects.filter(fantasy_team=team).select_related('real_team').exclude(pk__in=slotted_player_ids)
         for player in unslotted:
-            pts = calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded_dates)
-            stats = _week_player_stats(player, week.start_date, week.end_date, excluded_dates=excluded_dates)
+            start = _owned_start(player, week.start_date)
+            pts = calc_player_points_for_period(player, start, week.end_date, ps, excluded_dates=excluded_dates)
+            stats = _week_player_stats(player, start, week.end_date, excluded_dates=excluded_dates)
             row = {'slot_type': 'BN', 'player': player, 'points': pts, 'stats': stats}
             if player.is_pitcher:
                 bench_pitching.append(row)

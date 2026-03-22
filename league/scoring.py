@@ -117,9 +117,14 @@ def calc_team_weekly_points(fantasy_team, week, ps=None):
     if ps is None:
         ps = PointSettings.load()
     excluded = list(ExcludedDay.objects.filter(week=week).values_list('date', flat=True))
+    today = datetime.date.today()
     total = Decimal('0')
     for player in _active_players(fantasy_team, week=week):
-        total += calc_player_points_for_period(player, week.start_date, week.end_date, ps, excluded_dates=excluded)
+        # Only apply ownership start for the live/current week. For past weeks,
+        # fantasy_team_since reflects the most recent acquisition and may post-date
+        # the week being scored (e.g. player was traded away and re-added later).
+        start = _owned_start(player, week.start_date) if week.end_date >= today else week.start_date
+        total += calc_player_points_for_period(player, start, week.end_date, ps, excluded_dates=excluded)
     for coach in Coach.objects.filter(fantasy_team=fantasy_team):
         total += calc_coach_points_for_period(coach, week.start_date, week.end_date, ps, excluded_dates=excluded)
     return total
