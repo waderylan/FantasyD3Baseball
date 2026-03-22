@@ -105,6 +105,7 @@
                     <th class="text-end">RBI</th>
                     <th class="text-end">R</th>
                     <th class="text-end">BB</th>
+                    <th class="text-end">SO</th>
                     <th class="text-end">HBP</th>
                     <th class="text-end">SB</th>
                     <th class="text-end">CS</th>
@@ -125,19 +126,20 @@
                     <td class="text-end">{{ item.stats.total_rbi }}</td>
                     <td class="text-end">{{ item.stats.total_r }}</td>
                     <td class="text-end">{{ item.stats.total_bb }}</td>
+                    <td class="text-end">{{ item.stats.total_so }}</td>
                     <td class="text-end">{{ item.stats.total_hbp }}</td>
                     <td class="text-end">{{ item.stats.total_sb }}</td>
                     <td class="text-end">{{ item.stats.total_cs }}</td>
                     <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
                     {% else %}
                     <td class="fst-italic text-muted">Empty</td>
-                    <td colspan="12"></td>
+                    <td colspan="13"></td>
                     {% endif %}
                 </tr>
                 {% endfor %}
                 {% if t1_breakdown.bench_hitting %}
                 <tr class="table-secondary">
-                    <td colspan="14" class="small text-muted py-1 fw-semibold">Bench Hitters (not scoring)</td>
+                    <td colspan="15" class="small text-muted py-1 fw-semibold">Bench Hitters (not scoring)</td>
                 </tr>
                 {% for item in t1_breakdown.bench_hitting %}
                 <tr style="opacity:0.7">
@@ -151,6 +153,7 @@
                     <td class="text-end text-muted">{{ item.stats.total_rbi }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_r }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_bb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_so }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_hbp }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_sb }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_cs }}</td>
@@ -266,6 +269,7 @@
                     <th class="text-end">RBI</th>
                     <th class="text-end">R</th>
                     <th class="text-end">BB</th>
+                    <th class="text-end">SO</th>
                     <th class="text-end">HBP</th>
                     <th class="text-end">SB</th>
                     <th class="text-end">CS</th>
@@ -286,19 +290,20 @@
                     <td class="text-end">{{ item.stats.total_rbi }}</td>
                     <td class="text-end">{{ item.stats.total_r }}</td>
                     <td class="text-end">{{ item.stats.total_bb }}</td>
+                    <td class="text-end">{{ item.stats.total_so }}</td>
                     <td class="text-end">{{ item.stats.total_hbp }}</td>
                     <td class="text-end">{{ item.stats.total_sb }}</td>
                     <td class="text-end">{{ item.stats.total_cs }}</td>
                     <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
                     {% else %}
                     <td class="fst-italic text-muted">Empty</td>
-                    <td colspan="12"></td>
+                    <td colspan="13"></td>
                     {% endif %}
                 </tr>
                 {% endfor %}
                 {% if t2_breakdown.bench_hitting %}
                 <tr class="table-secondary">
-                    <td colspan="14" class="small text-muted py-1 fw-semibold">Bench Hitters (not scoring)</td>
+                    <td colspan="15" class="small text-muted py-1 fw-semibold">Bench Hitters (not scoring)</td>
                 </tr>
                 {% for item in t2_breakdown.bench_hitting %}
                 <tr style="opacity:0.7">
@@ -312,6 +317,7 @@
                     <td class="text-end text-muted">{{ item.stats.total_rbi }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_r }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_bb }}</td>
+                    <td class="text-end text-muted">{{ item.stats.total_so }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_hbp }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_sb }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_cs }}</td>
