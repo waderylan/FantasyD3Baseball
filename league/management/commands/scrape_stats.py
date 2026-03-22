@@ -147,8 +147,11 @@ def _bool_flag(val):
 
 def _parse_name(raw):
     """
-    'Last, First'  -> ('First', 'Last')
-    'First Last'   -> ('First', 'Last')
+    'Last, First'      -> ('First', 'Last')
+    'First Last'       -> ('First', 'Last')
+    'J.COLLINS 1b'     -> ('J', 'COLLINS')   # Bard all-caps opponent format
+    'M.O\'NEILL cf'    -> ('M', "O'NEILL")
+    'LSCHWARTZMAN lf'  -> ('L', 'SCHWARTZMAN')
     Returns (None, None) on failure.
     """
     raw = str(raw or '').strip()
@@ -156,10 +159,32 @@ def _parse_name(raw):
     raw = re.sub(r'\s+(?:jr\.?|sr\.?|ii+|iv|vi?)$', '', raw, flags=re.I).strip()
     if not raw:
         return None, None
+
+    # Strip trailing position token(s) (e.g. "M.O'NEILL cf" -> "M.O'NEILL")
+    _POS = re.compile(
+        r'^(?:p|c|1b|2b|3b|ss|rf|lf|cf|of|dh|ph|inf|ut|pr|pinch|pinch-hitter|pinch-runner)(?:\/[a-z0-9]+)?$',
+        re.I,
+    )
+    parts = raw.split()
+    while len(parts) > 1 and _POS.match(parts[-1]):
+        parts.pop()
+    raw = ' '.join(parts)
+
     if ',' in raw:
         parts = raw.split(',', 1)
         return parts[1].strip(), parts[0].strip()
     parts = raw.split()
+    if len(parts) == 1:
+        token = parts[0]
+        # "X.LASTNAME" or "X.O'LAST" (e.g. "J.COLLINS", "M.O'NEILL")
+        m = re.match(r"^([A-Za-z])\.([A-Za-z][A-Za-z'\-]*)$", token)
+        if m:
+            return m.group(1), m.group(2)
+        # "XLASTNAME" all-caps no-dot (e.g. "LSCHWARTZMAN") — last resort
+        m = re.match(r'^([A-Z])([A-Z\'\-]{3,})$', token)
+        if m:
+            return m.group(1), m.group(2)
+        return None, None
     if len(parts) < 2:
         return None, None
     return parts[0], ' '.join(parts[1:])
