@@ -118,6 +118,23 @@ def _is_sunday_unlock_window():
     return False
 
 
+def _effective_current_week():
+    """Return the week that should be treated as 'current' for display and editing.
+
+    During the Sunday 9 PM unlock window, next week is treated as current so
+    lineup changes and the week selector reflect the upcoming week.
+    """
+    today = datetime.date.today()
+    if _is_sunday_unlock_window():
+        next_week = Week.objects.filter(start_date=today + datetime.timedelta(days=1)).first()
+        if next_week:
+            return next_week
+    return (
+        Week.objects.filter(start_date__lte=today, end_date__gte=today).first()
+        or Week.objects.filter(end_date__lt=today).last()
+    )
+
+
 def _ensure_week_snapshot(team, week):
     """If no lineup snapshot exists for this team+week, create one from live roster slots.
 
@@ -399,15 +416,21 @@ def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
 
 
 def matchup_view(request):
-    today = datetime.date.today()
-    current_week = (
-        Week.objects.filter(start_date__lte=today, end_date__gte=today).first()
-        or Week.objects.filter(end_date__lt=today).last()
-    )
-    if not current_week:
-        return render(request, 'league/matchup.html', {'no_week': True, 'current_week': None})
+    all_weeks = Week.objects.order_by('start_date')
+    effective_week = _effective_current_week()
 
-    all_matchups = Matchup.objects.filter(week=current_week).select_related(
+    week_id_param = request.GET.get('week_id')
+    if week_id_param:
+        display_week = Week.objects.filter(pk=week_id_param).first() or effective_week
+    else:
+        display_week = effective_week
+
+    if not display_week:
+        return render(request, 'league/matchup.html', {
+            'no_week': True, 'current_week': None, 'all_weeks': all_weeks,
+        })
+
+    all_matchups = Matchup.objects.filter(week=display_week).select_related(
         'week', 'team_1', 'team_2'
     )
 
@@ -424,7 +447,10 @@ def matchup_view(request):
     if matchup is None:
         matchup = all_matchups.first()
     if matchup is None:
-        return render(request, 'league/matchup.html', {'no_week': True, 'current_week': current_week})
+        return render(request, 'league/matchup.html', {
+            'no_week': True, 'current_week': display_week, 'all_weeks': all_weeks,
+            'effective_current_week': effective_week,
+        })
 
     ps = PointSettings.load()
     excluded_dates = list(ExcludedDay.objects.filter(week=matchup.week).values_list('date', flat=True))
@@ -436,7 +462,9 @@ def matchup_view(request):
     return render(request, 'league/matchup.html', {
         'matchup': matchup,
         'all_matchups': all_matchups,
-        'current_week': current_week,
+        'current_week': display_week,
+        'effective_current_week': effective_week,
+        'all_weeks': all_weeks,
         't1_pts': t1_pts,
         't2_pts': t2_pts,
         'winner': winner,
@@ -469,9 +497,7 @@ def roster_view(request, team_id):
 
     ps = PointSettings.load()
     today = datetime.date.today()
-    current_week = Week.objects.filter(
-        start_date__lte=today, end_date__gte=today
-    ).first() or Week.objects.filter(end_date__lt=today).last()
+    current_week = _effective_current_week()
 
     all_weeks = Week.objects.order_by('start_date')
 
@@ -481,7 +507,7 @@ def roster_view(request, team_id):
     week_id_param = request.GET.get('week_id')
     if week_id_param:
         selected_week = Week.objects.filter(pk=week_id_param).first()
-        if selected_week and selected_week.end_date < today:
+        if selected_week and current_week and selected_week.start_date < current_week.start_date:
             is_locked_week = True
         else:
             selected_week = None  # invalid or current/future week — ignore

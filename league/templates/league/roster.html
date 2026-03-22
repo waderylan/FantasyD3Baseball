@@ -27,7 +27,7 @@
     {% for w in all_weeks %}
     {% if w == current_week %}
     <a href="{% url 'league:roster' viewed_team.id %}" class="btn btn-sm {% if not selected_week %}btn-dark{% else %}btn-outline-secondary{% endif %}">Week {{ w.week_number }} (Current)</a>
-    {% elif w.end_date < today %}
+    {% elif current_week and w.start_date < current_week.start_date %}
     <a href="?week_id={{ w.pk }}" class="btn btn-sm {% if selected_week.pk == w.pk %}btn-dark{% else %}btn-outline-secondary{% endif %}">Week {{ w.week_number }}</a>
     {% endif %}
     {% endfor %}

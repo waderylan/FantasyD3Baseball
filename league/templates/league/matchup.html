@@ -8,7 +8,21 @@
 <div class="alert alert-info">No matchup data available yet.</div>
 {% else %}
 
-{# ---- Week + matchup selector ---- #}
+{# ---- Week selector ---- #}
+{% if all_weeks %}
+<div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+    <span class="text-muted small">Week:</span>
+    {% for w in all_weeks %}
+    {% if w == effective_current_week %}
+    <a href="{% url 'league:matchup' %}" class="btn btn-sm {% if current_week == effective_current_week %}btn-dark{% else %}btn-outline-secondary{% endif %}">Week {{ w.week_number }} (Current)</a>
+    {% elif effective_current_week and w.start_date < effective_current_week.start_date %}
+    <a href="?week_id={{ w.pk }}" class="btn btn-sm {% if current_week.pk == w.pk %}btn-dark{% else %}btn-outline-secondary{% endif %}">Week {{ w.week_number }}</a>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}
+
+{# ---- Matchup selector ---- #}
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="mb-0">Week {{ current_week.week_number }}
         <span class="text-muted fs-6 fw-normal">{{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>
@@ -27,6 +41,7 @@
     </div>
     {% else %}
     <form method="get" class="d-flex align-items-center gap-2">
+        {% if current_week != effective_current_week %}<input type="hidden" name="week_id" value="{{ current_week.id }}">{% endif %}
         <label class="form-label mb-0 text-muted small">Matchup:</label>
         <select name="matchup_id" class="form-select form-select-sm" style="min-width:260px" onchange="this.form.submit()">
             {% for m in all_matchups %}
