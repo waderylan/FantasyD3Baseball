@@ -19,7 +19,8 @@ def ip_display(outs):
 def pct_format(value):
     """Format a win percentage like .750"""
     try:
-        return f".{int(value * 1000):03d}"
+        v = int(round(value * 1000))
+        return "1.000" if v >= 1000 else f".{v:03d}"
     except (TypeError, ValueError):
         return '.000'
 
