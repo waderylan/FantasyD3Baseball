@@ -78,11 +78,16 @@
                 <th>School</th>
                 <th class="text-end">AB</th>
                 <th class="text-end">H</th>
+                <th class="text-end">2B</th>
+                <th class="text-end">3B</th>
                 <th class="text-end">HR</th>
                 <th class="text-end">RBI</th>
                 <th class="text-end">R</th>
                 <th class="text-end">BB</th>
+                <th class="text-end">SO</th>
+                <th class="text-end">HBP</th>
                 <th class="text-end">SB</th>
+                <th class="text-end">CS</th>
                 <th class="text-end">Points</th>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<th></th>{% endif %}
             </tr>
@@ -97,11 +102,16 @@
                 <td>{{ entry.row.player.real_team.abbreviation }}</td>
                 <td class="text-end">{{ entry.row.stats.total_ab|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_h|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_2b|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_3b|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_hr|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_rbi|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_r|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_so|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_hbp|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_sb|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_cs|default:"0" }}</td>
                 <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
@@ -115,7 +125,7 @@
                 </td>
                 {% endif %}
                 {% else %}
-                <td colspan="11" class="fst-italic">Empty</td>
+                <td colspan="15" class="fst-italic">Empty</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<td></td>{% endif %}
                 {% endif %}
             </tr>
@@ -139,7 +149,9 @@
                 <th class="text-end">ER</th>
                 <th class="text-end">BB</th>
                 <th class="text-end">SO</th>
-                <th class="text-end">HR</th>
+                <th class="text-end">W</th>
+                <th class="text-end">L</th>
+                <th class="text-end">SV</th>
                 <th class="text-end">Points</th>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<th></th>{% endif %}
             </tr>
@@ -157,7 +169,9 @@
                 <td class="text-end">{{ entry.row.stats.total_er|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_bb|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_so|default:"0" }}</td>
-                <td class="text-end">{{ entry.row.stats.total_hr|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_w|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_l|default:"0" }}</td>
+                <td class="text-end">{{ entry.row.stats.total_sv|default:"0" }}</td>
                 <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
@@ -171,7 +185,7 @@
                 </td>
                 {% endif %}
                 {% else %}
-                <td colspan="10" class="fst-italic">Empty</td>
+                <td colspan="11" class="fst-italic">Empty</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}<td></td>{% endif %}
                 {% endif %}
             </tr>

@@ -327,7 +327,7 @@ def _week_player_stats(player, start_date, end_date, excluded_dates=()):
             total_r=Sum('runs'), total_bb=Sum('bb'), total_so=Sum('so'),
             total_sb=Sum('sb'), total_cs=Sum('cs'), total_hbp=Sum('hbp'),
         )
-    return {k: (v or 0) for k, v in agg.items()}
+    return {k: (int(v) if v else 0) for k, v in agg.items()}
 
 
 def _matchup_team_breakdown(team, week, ps, excluded_dates=()):
