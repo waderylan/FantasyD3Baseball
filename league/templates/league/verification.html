@@ -190,7 +190,7 @@
                 <td class="text-end">{{ pd.season_points|pts_format }}</td>
                 <td class="text-end">{% if pd.games_played %}{{ pd.ppg|pts_format }}{% else %}—{% endif %}</td>
                 <td class="text-nowrap">
-                    <a href="{% url 'league:player_detail' pd.player.id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                    <a href="{% url 'league:player_detail' pd.player.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Details</a>
                     {% if request.fantasy_team and not request.fantasy_team.is_commissioner and not pd.player.fantasy_team %}
                     <form method="post" action="{% url 'league:member_add_player' pd.player.id %}" class="d-inline">
                         {% csrf_token %}

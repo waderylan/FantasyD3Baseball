@@ -179,7 +179,17 @@
 {% endif %}
 
 <div class="d-flex justify-content-between align-items-center mt-3">
-    <a href="{% url 'league:players' %}" class="btn btn-secondary">Back to Players</a>
+    {% if request.GET.next %}
+      {% if request.GET.back == 'roster' %}
+        <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Roster</a>
+      {% elif request.GET.back == 'matchup' %}
+        <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Matchup</a>
+      {% else %}
+        <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Players</a>
+      {% endif %}
+    {% else %}
+      <a href="{% url 'league:players' %}" class="btn btn-secondary">Back to Players</a>
+    {% endif %}
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
     <a href="{% url 'league:submit_missing_game_dispute' player.id %}" class="btn btn-outline-warning">Report Missing Game</a>
     {% endif %}

@@ -98,7 +98,7 @@
             <tr {% if not entry.row %}class="table-secondary text-muted"{% endif %}>
                 <td><span class="badge bg-secondary">{{ entry.slot.slot_label }}</span></td>
                 {% if entry.row %}
-                <td><a href="{% url 'league:player_detail' entry.row.player.id %}" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
+                <td><a href="{% url 'league:player_detail' entry.row.player.id %}?next={{ request.get_full_path|urlencode }}&back=roster" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
                 <td>{{ entry.row.player.real_team.abbreviation }}</td>
                 <td class="text-end">{{ entry.row.stats.total_ab|default:"0" }}</td>
                 <td class="text-end">{{ entry.row.stats.total_h|default:"0" }}</td>
@@ -162,7 +162,7 @@
             <tr {% if not entry.row %}class="table-secondary text-muted"{% endif %}>
                 <td><span class="badge bg-danger">{{ entry.slot.slot_label }}</span></td>
                 {% if entry.row %}
-                <td><a href="{% url 'league:player_detail' entry.row.player.id %}" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
+                <td><a href="{% url 'league:player_detail' entry.row.player.id %}?next={{ request.get_full_path|urlencode }}&back=roster" class="text-decoration-none">{{ entry.row.player.last_name }}, {{ entry.row.player.first_name }}</a></td>
                 <td>{{ entry.row.player.real_team.abbreviation }}</td>
                 <td class="text-end">{{ entry.row.stats.total_outs|ip_display }}</td>
                 <td class="text-end">{{ entry.row.stats.total_h|default:"0" }}</td>
@@ -211,7 +211,7 @@
         <tbody>
             {% for row in unslotted %}
             <tr>
-                <td><a href="{% url 'league:player_detail' row.player.id %}" class="text-decoration-none">{{ row.player.last_name }}, {{ row.player.first_name }}</a></td>
+                <td><a href="{% url 'league:player_detail' row.player.id %}?next={{ request.get_full_path|urlencode }}&back=roster" class="text-decoration-none">{{ row.player.last_name }}, {{ row.player.first_name }}</a></td>
                 <td><span class="badge bg-{{ row.player.position|position_badge_color }}">{{ row.player.position }}</span></td>
                 <td>{{ row.player.real_team.abbreviation }}</td>
                 <td class="text-end fw-bold">{{ row.points|pts_format }}</td>

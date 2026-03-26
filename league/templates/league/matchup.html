@@ -117,7 +117,7 @@
                 <tr {% if not item.player %}class="text-muted"{% endif %}>
                     <td><span class="badge bg-secondary">{{ item.slot_type }}</span></td>
                     {% if item.player %}
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end">{{ item.stats.total_ab }}</td>
                     <td class="text-end">{{ item.stats.total_h }}</td>
                     <td class="text-end">{{ item.stats.total_2b }}</td>
@@ -144,7 +144,7 @@
                 {% for item in t1_breakdown.bench_hitting %}
                 <tr style="opacity:0.7">
                     <td><span class="badge bg-secondary">BN</span></td>
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end text-muted">{{ item.stats.total_ab }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_h }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_2b }}</td>
@@ -186,7 +186,7 @@
                 <tr {% if not item.player %}class="text-muted"{% endif %}>
                     <td><span class="badge bg-danger">P</span></td>
                     {% if item.player %}
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end">{{ item.stats.total_outs|ip_display }}</td>
                     <td class="text-end">{{ item.stats.total_h }}</td>
                     <td class="text-end">{{ item.stats.total_er }}</td>
@@ -207,7 +207,7 @@
                 {% for item in t1_breakdown.bench_pitching %}
                 <tr style="opacity:0.7">
                     <td><span class="badge bg-secondary">BN</span></td>
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end text-muted">{{ item.stats.total_outs|ip_display }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_h }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_er }}</td>
@@ -281,7 +281,7 @@
                 <tr {% if not item.player %}class="text-muted"{% endif %}>
                     <td><span class="badge bg-secondary">{{ item.slot_type }}</span></td>
                     {% if item.player %}
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end">{{ item.stats.total_ab }}</td>
                     <td class="text-end">{{ item.stats.total_h }}</td>
                     <td class="text-end">{{ item.stats.total_2b }}</td>
@@ -308,7 +308,7 @@
                 {% for item in t2_breakdown.bench_hitting %}
                 <tr style="opacity:0.7">
                     <td><span class="badge bg-secondary">BN</span></td>
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end text-muted">{{ item.stats.total_ab }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_h }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_2b }}</td>
@@ -350,7 +350,7 @@
                 <tr {% if not item.player %}class="text-muted"{% endif %}>
                     <td><span class="badge bg-danger">P</span></td>
                     {% if item.player %}
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end">{{ item.stats.total_outs|ip_display }}</td>
                     <td class="text-end">{{ item.stats.total_h }}</td>
                     <td class="text-end">{{ item.stats.total_er }}</td>
@@ -371,7 +371,7 @@
                 {% for item in t2_breakdown.bench_pitching %}
                 <tr style="opacity:0.7">
                     <td><span class="badge bg-secondary">BN</span></td>
-                    <td><a href="{% url 'league:player_detail' item.player.id %}" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
+                    <td><a href="{% url 'league:player_detail' item.player.id %}?next={{ request.get_full_path|urlencode }}&back=matchup" class="text-decoration-none text-muted">{{ item.player.last_name }}, {{ item.player.first_name }}</a></td>
                     <td class="text-end text-muted">{{ item.stats.total_outs|ip_display }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_h }}</td>
                     <td class="text-end text-muted">{{ item.stats.total_er }}</td>
