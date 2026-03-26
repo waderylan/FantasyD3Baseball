@@ -226,7 +226,7 @@ def dashboard(request):
     if team:
         if team.is_commissioner:
             return redirect('league:commissioner_panel')
-        return redirect('league:roster', team_id=team.id)
+        return redirect('league:home_dashboard')
     return redirect('league:login')
 
 
