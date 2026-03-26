@@ -18,6 +18,9 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if request.fantasy_team %}
                 <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home_dashboard' %}active{% endif %}" href="{% url 'league:home_dashboard' %}">Home</a>
+                    </li>
                     {% if not request.fantasy_team.is_commissioner %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'league:roster' request.fantasy_team.id %}">My Roster</a>

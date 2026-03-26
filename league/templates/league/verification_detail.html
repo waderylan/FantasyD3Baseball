@@ -184,6 +184,8 @@
         <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Roster</a>
       {% elif request.GET.back == 'matchup' %}
         <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Matchup</a>
+      {% elif request.GET.back == 'home' %}
+        <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Home</a>
       {% else %}
         <a href="{{ request.GET.next }}" class="btn btn-secondary">Back to Players</a>
       {% endif %}

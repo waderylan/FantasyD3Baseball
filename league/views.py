@@ -230,6 +230,145 @@ def dashboard(request):
     return redirect('league:login')
 
 
+# --- Home Dashboard ---
+
+def _calc_streaks(ps):
+    """Return hot/cold streak leaders for rostered hitters and pitchers."""
+
+    def _current_streak(pts_list, avg, hot):
+        count = 0
+        for pts in reversed(pts_list):
+            if hot and pts >= avg:
+                count += 1
+            elif not hot and pts < avg:
+                count += 1
+            else:
+                break
+        return count
+
+    # Hitters
+    hitting_logs = (
+        HittingGameLog.objects
+        .filter(player__fantasy_team__isnull=False, player__position__in=['C', 'IF', 'OF', 'DH'])
+        .select_related('player', 'game')
+        .order_by('player_id', 'game__date')
+    )
+    player_hitting = {}
+    for log in hitting_logs:
+        if log.player_id not in player_hitting:
+            player_hitting[log.player_id] = (log.player, [])
+        player_hitting[log.player_id][1].append(calc_hitting_points(log, ps))
+
+    all_hit_pts = [p for _, pts in player_hitting.values() for p in pts]
+    hit_avg = sum(all_hit_pts) / len(all_hit_pts) if all_hit_pts else Decimal('0')
+
+    hit_streaks = []
+    for player, pts in player_hitting.values():
+        h = _current_streak(pts, hit_avg, hot=True)
+        c = _current_streak(pts, hit_avg, hot=False)
+        hit_streaks.append({'player': player, 'hot': h, 'cold': c})
+
+    hot_hitters = sorted(hit_streaks, key=lambda x: x['hot'], reverse=True)[:3]
+    cold_hitters = sorted(hit_streaks, key=lambda x: x['cold'], reverse=True)[:3]
+
+    # Pitchers
+    pitching_logs = (
+        PitchingGameLog.objects
+        .filter(player__fantasy_team__isnull=False)
+        .select_related('player', 'game')
+        .order_by('player_id', 'game__date')
+    )
+    player_pitching = {}
+    for log in pitching_logs:
+        if log.player_id not in player_pitching:
+            player_pitching[log.player_id] = (log.player, [])
+        player_pitching[log.player_id][1].append(calc_pitching_points(log, ps))
+
+    all_pit_pts = [p for _, pts in player_pitching.values() for p in pts]
+    pit_avg = sum(all_pit_pts) / len(all_pit_pts) if all_pit_pts else Decimal('0')
+
+    pit_streaks = []
+    for player, pts in player_pitching.values():
+        h = _current_streak(pts, pit_avg, hot=True)
+        c = _current_streak(pts, pit_avg, hot=False)
+        pit_streaks.append({'player': player, 'hot': h, 'cold': c})
+
+    hot_pitchers = sorted(pit_streaks, key=lambda x: x['hot'], reverse=True)[:3]
+    cold_pitchers = sorted(pit_streaks, key=lambda x: x['cold'], reverse=True)[:3]
+
+    return {
+        'hot_hitters': hot_hitters,
+        'cold_hitters': cold_hitters,
+        'hot_pitchers': hot_pitchers,
+        'cold_pitchers': cold_pitchers,
+        'hit_avg': round(hit_avg, 1),
+        'pit_avg': round(pit_avg, 1),
+    }
+
+
+def home_view(request):
+    ps = PointSettings.load()
+    current_week = _effective_current_week()
+
+    # This week's matchup scores
+    matchups_data = []
+    if current_week:
+        for m in Matchup.objects.filter(week=current_week).select_related('team_1', 'team_2'):
+            t1_pts, t2_pts, winner = resolve_matchup(m, ps)
+            matchups_data.append({'matchup': m, 't1_pts': t1_pts, 't2_pts': t2_pts, 'winner': winner})
+
+    # Full standings
+    standings = get_standings()
+
+    # Weekly awards — rostered players who appeared in a game this week
+    best_hitter = worst_hitter = best_pitcher = worst_pitcher = None
+    if current_week:
+        hitter_ids = list(HittingGameLog.objects.filter(
+            game__date__gte=current_week.start_date,
+            game__date__lte=current_week.end_date,
+            player__fantasy_team__isnull=False,
+        ).values_list('player_id', flat=True).distinct())
+
+        pitcher_ids = list(PitchingGameLog.objects.filter(
+            game__date__gte=current_week.start_date,
+            game__date__lte=current_week.end_date,
+            player__fantasy_team__isnull=False,
+        ).values_list('player_id', flat=True).distinct())
+
+        hitters = list(Player.objects.filter(pk__in=hitter_ids).order_by('-cached_weekly_points'))
+        pitchers = list(Player.objects.filter(pk__in=pitcher_ids).order_by('-cached_weekly_points'))
+
+        best_hitter = hitters[0] if hitters else None
+        worst_hitter = hitters[-1] if len(hitters) > 1 else None
+        best_pitcher = pitchers[0] if pitchers else None
+        worst_pitcher = pitchers[-1] if len(pitchers) > 1 else None
+
+    # Top 5 free agents by season points, split by type
+    fa_hitters = Player.objects.filter(
+        fantasy_team__isnull=True, position__in=['C', 'IF', 'OF', 'DH']
+    ).order_by('-cached_season_points')[:5]
+
+    fa_pitchers = Player.objects.filter(
+        fantasy_team__isnull=True, position='P'
+    ).order_by('-cached_season_points')[:5]
+
+    # Hot/cold streaks
+    streaks = _calc_streaks(ps)
+
+    return render(request, 'league/home.html', {
+        'current_week': current_week,
+        'matchups': matchups_data,
+        'standings': standings,
+        'best_hitter': best_hitter,
+        'worst_hitter': worst_hitter,
+        'best_pitcher': best_pitcher,
+        'worst_pitcher': worst_pitcher,
+        'fa_hitters': fa_hitters,
+        'fa_pitchers': fa_pitchers,
+        **streaks,
+    })
+
+
 # --- Standings ---
 
 def standings_view(request):
