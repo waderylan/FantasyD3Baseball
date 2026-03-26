@@ -327,12 +327,14 @@ def home_view(request):
             game__date__gte=current_week.start_date,
             game__date__lte=current_week.end_date,
             player__fantasy_team__isnull=False,
+            player__position__in=['C', 'IF', 'OF', 'DH'],
         ).values_list('player_id', flat=True).distinct())
 
         pitcher_ids = list(PitchingGameLog.objects.filter(
             game__date__gte=current_week.start_date,
             game__date__lte=current_week.end_date,
             player__fantasy_team__isnull=False,
+            player__position='P',
         ).values_list('player_id', flat=True).distinct())
 
         hitters = list(Player.objects.filter(pk__in=hitter_ids).order_by('-cached_weekly_points'))
