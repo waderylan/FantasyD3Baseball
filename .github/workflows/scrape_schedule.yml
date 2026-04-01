@@ -1,0 +1,44 @@
+name: Scrape and Send Schedule
+
+on:
+  schedule:
+    # Midnight EDT (04:00 UTC) and Noon EDT (16:00 UTC)
+    - cron: '0 4,16 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape-and-send-schedule:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Install Playwright Chromium
+        run: uv run playwright install chromium --with-deps
+
+      - name: Set up Django env
+        run: |
+          echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
+          echo "DEBUG=False" >> .env
+          echo "ALLOWED_HOSTS=localhost" >> .env
+
+      - name: Migrate database
+        run: uv run python manage.py migrate --run-syncdb
+
+      - name: Load teams and players
+        run: uv run python manage.py loaddata league/fixtures/bootstrap.json
+
+      - name: Scrape schedule
+        run: uv run python manage.py scrape_schedule
+
+      - name: Export and send schedule
+        env:
+          INGEST_SECRET: ${{ secrets.INGEST_SECRET }}
+          INGEST_URL: https://rylanwwade.pythonanywhere.com
+        run: uv run python manage.py export_schedule --send

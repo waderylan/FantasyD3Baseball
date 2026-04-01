@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}LL Schedule — Fantasy D3 Baseball{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Liberty League Baseball Schedule</h2>
+
+{% if not grouped_games %}
+<div class="alert alert-info">No schedule data has been loaded yet.</div>
+{% endif %}
+
+{% for day in grouped_games %}
+<div class="card mb-3 {% if day.date == today %}border-primary{% endif %}" {% if day.date == today %}id="today"{% endif %}>
+    <div class="card-header {% if day.date == today %}bg-primary text-white{% endif %}">
+        <strong>{{ day.date|date:"l, F j, Y" }}</strong>
+        {% if day.date == today %}
+        <span class="badge bg-light text-dark ms-2">Today</span>
+        {% endif %}
+    </div>
+    <ul class="list-group list-group-flush">
+        {% for game in day.games %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+                {{ game.away_team_name }} <strong>@</strong> {{ game.home_team_name }}
+            </span>
+            <span>
+                {% if game.game_time %}
+                <span class="text-muted me-2">{{ game.game_time }}</span>
+                {% endif %}
+                {% if game.status == 'FINAL' %}
+                    <span class="text-muted me-2">{{ game.away_score }} &ndash; {{ game.home_score }}</span>
+                    <span class="badge bg-secondary">Final</span>
+                {% elif game.status == 'POSTPONED' %}
+                    <span class="badge bg-warning text-dark">Postponed</span>
+                {% elif game.status == 'CANCELLED' %}
+                    <span class="badge bg-danger">Cancelled</span>
+                {% else %}
+                    <span class="badge bg-info text-dark">Upcoming</span>
+                {% endif %}
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+
+<script>
+    const today = document.getElementById('today');
+    if (today) {
+        today.scrollIntoView();
+    }
+</script>
+{% endblock %}
