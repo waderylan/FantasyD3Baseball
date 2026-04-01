@@ -1,14 +1,18 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}Login - Fantasy D3 Baseball{% endblock %}
+{% block title %}Login - Liberty League Fantasy Baseball{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-5">
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="text-center mb-4">
+            <div class="fw-bold" style="font-size:1.2rem; color:var(--navy);">Liberty League</div>
+            <div class="text-muted" style="font-size:0.85rem; letter-spacing:0.06em; text-transform:uppercase;">Fantasy Baseball</div>
+        </div>
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Team Login</h4>
+            <div class="card-header text-white" style="background-color:var(--navy);">
+                <h5 class="mb-0">Team Login</h5>
             </div>
             <div class="card-body">
                 <form method="post">
@@ -25,7 +29,7 @@
                 </form>
             </div>
             <div class="card-footer text-center">
-                <a href="{% url 'league:players' %}">Browse Players (no login required)</a>
+                <a href="{% url 'league:players' %}" class="text-muted small">Browse Players (no login required)</a>
             </div>
         </div>
     </div>

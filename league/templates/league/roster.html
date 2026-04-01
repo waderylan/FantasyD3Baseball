@@ -4,21 +4,23 @@
 {% block title %}{{ viewed_team }} Roster{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>
-        {{ viewed_team }}
-        {% if is_locked_week %}<span class="badge bg-secondary ms-2" style="font-size:0.6em;vertical-align:middle;">Locked</span>{% endif %}
-    </h2>
-    {% if not is_locked_week %}
-    {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
-    <div class="d-flex gap-2">
-        {% if not request.fantasy_team.is_commissioner %}
-        <a href="{% url 'league:trade_select_team' %}" class="btn" style="background-color:#fd7e14;color:#fff;">Trade</a>
+<div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body py-3 px-3 d-flex justify-content-between align-items-center">
+        <h2 class="mb-0 fs-4">
+            {{ viewed_team }}
+            {% if is_locked_week %}<span class="badge bg-secondary ms-2" style="font-size:0.6em;vertical-align:middle;">Locked</span>{% endif %}
+        </h2>
+        {% if not is_locked_week %}
+        {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
+        <div class="d-flex gap-2">
+            {% if not request.fantasy_team.is_commissioner %}
+            <a href="{% url 'league:trade_select_team' %}" class="btn btn-sm" style="background-color:#fd7e14;color:#fff;">Trade</a>
+            {% endif %}
+            <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-sm btn-primary">Set Lineup</a>
+        </div>
         {% endif %}
-        <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-primary">Set Lineup</a>
+        {% endif %}
     </div>
-    {% endif %}
-    {% endif %}
 </div>
 
 {% if all_weeks %}
@@ -68,10 +70,10 @@
 {% with active_rows=slot_rows %}
 
 {# Hitters section #}
-<h5 class="mt-2">Lineup — Hitters</h5>
+<h5 class="section-header mt-3 mb-2">Lineup &mdash; Hitters</h5>
 <div class="table-responsive mb-3">
     <table class="table table-sm table-striped align-middle">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th style="width:55px">Slot</th>
                 <th>Player</th>
@@ -136,10 +138,10 @@
 </div>
 
 {# Pitchers section #}
-<h5>Lineup — Pitchers</h5>
+<h5 class="section-header mb-2">Lineup &mdash; Pitchers</h5>
 <div class="table-responsive mb-3">
     <table class="table table-sm table-striped align-middle">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th style="width:55px">Slot</th>
                 <th>Player</th>
@@ -195,11 +197,11 @@
     </table>
 </div>
 
-{# Bench section — all rostered players not in an active slot #}
-<h5>Bench</h5>
+{# Bench section #}
+<h5 class="section-header mb-2">Bench</h5>
 <div class="table-responsive mb-4">
     <table class="table table-sm table-striped align-middle">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th>Player</th>
                 <th>Pos</th>
@@ -238,10 +240,10 @@
 
 {# Coaches section #}
 {% if coach_rows %}
-<h5>Coach</h5>
+<h5 class="section-header mb-2">Coach</h5>
 <div class="table-responsive mb-4">
     <table class="table table-sm table-striped align-middle">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th style="width:55px">Slot</th>
                 <th>Coach</th>

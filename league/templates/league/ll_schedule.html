@@ -31,14 +31,15 @@
 
             {# Date header #}
             <div class="d-flex align-items-center mb-2">
-                <div class="rounded px-3 py-1 me-3 {% if day.date == today %}bg-primary text-white{% elif day.date < today %}bg-light text-muted{% else %}bg-dark text-white{% endif %}"
+                <div class="rounded px-3 py-1 me-3 {% if day.date < today %}bg-light text-muted{% else %}text-white{% endif %}"
+                     {% if day.date >= today %}style="background-color:var(--navy);"{% endif %}
                      style="min-width: 64px; text-align: center;">
                     <div class="fw-bold" style="font-size: 1.4rem; line-height: 1.1;">{{ day.date|date:"j" }}</div>
                     <div style="font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase;">{{ day.date|date:"M" }}</div>
                 </div>
                 <div>
                     <span class="fw-semibold">{{ day.date|date:"l" }}</span>
-                    {% if day.date == today %}<span class="badge bg-primary ms-2">Today</span>{% endif %}
+                    {% if day.date == today %}<span class="badge ms-2" style="background-color:var(--navy);">Today</span>{% endif %}
                 </div>
                 <hr class="flex-grow-1 ms-3 my-0">
             </div>

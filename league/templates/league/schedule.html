@@ -7,8 +7,8 @@
 <h2>Season Schedule</h2>
 
 {% for wd in week_data %}
-<div class="card mb-3 {% if wd.is_current %}border-primary{% endif %}">
-    <div class="card-header {% if wd.is_current %}bg-primary text-white{% endif %}">
+<div class="card mb-3 {% if wd.is_current %}border-0 shadow{% endif %}">
+    <div class="card-header {% if wd.is_current %}text-white{% endif %}" {% if wd.is_current %}style="background-color:var(--navy);"{% endif %}>
         <strong>{{ wd.week }}</strong>
         {% if wd.is_current %}<span class="badge bg-light text-dark ms-2">Current Week</span>{% endif %}
     </div>

@@ -22,7 +22,8 @@
     {% endif %}
 </div>
 
-<form method="get" class="row g-3 mb-4">
+<div class="card p-3 mb-4">
+<form method="get" class="row g-3">
     {% if show_all %}<input type="hidden" name="show_all" value="1">{% endif %}
     <div class="col-md-3">
         <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Search player name...">
@@ -67,11 +68,12 @@
         <a href="{% url 'league:players' %}" class="btn btn-secondary">Reset</a>
     </div>
 </form>
+</div>
 
 {% if selected_position == 'coaches' %}
 <div class="table-responsive">
     <table class="table table-striped">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th>Coach</th>
                 <th>Pos</th>
@@ -129,7 +131,7 @@
 {% else %}
 <div class="table-responsive">
     <table class="table table-striped">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th>Player</th>
                 <th>Pos</th>

@@ -20,7 +20,7 @@
 
     {# Active slots #}
     {% for section in slot_sections %}
-    <h5 class="mt-4 border-bottom pb-1">{{ section.label }}</h5>
+    <h5 class="section-header mt-4 mb-3">{{ section.label }}</h5>
     {% for entry in section.rows %}
     {% with slot=entry.slot %}
     <div class="row align-items-center mb-2">
@@ -44,7 +44,7 @@
     {% endfor %}
 
     {# Bench section — pre-filled with all unslotted players + one empty #}
-    <h5 class="mt-4 border-bottom pb-1">Bench</h5>
+    <h5 class="section-header mt-4 mb-3">Bench</h5>
     <div id="bench-container">
         {% for row in bench_rows %}
         <div class="row align-items-center mb-2 bench-row">

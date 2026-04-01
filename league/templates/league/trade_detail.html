@@ -24,7 +24,7 @@
 <div class="row g-4 mb-4">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header"><strong>{{ trade.sender }}</strong> gives</div>
+            <div class="card-header text-white" style="background-color:var(--navy);"><strong>{{ trade.sender }}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in give_items %}
                 <li class="list-group-item">
@@ -42,7 +42,7 @@
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header"><strong>{{ trade.receiver }}</strong> gives</div>
+            <div class="card-header text-white" style="background-color:var(--navy);"><strong>{{ trade.receiver }}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in receive_items %}
                 <li class="list-group-item">

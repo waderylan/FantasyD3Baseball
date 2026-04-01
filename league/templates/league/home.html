@@ -4,22 +4,22 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">
-    Home
-    {% if current_week %}<span class="text-muted fs-5 ms-2">Week {{ current_week.week_number }}</span>{% endif %}
-</h2>
+<div class="d-flex align-items-center gap-3 mb-4">
+    <h2 class="mb-0">Home</h2>
+    {% if current_week %}<span class="badge rounded-pill px-3 py-2" style="background:var(--navy-light);color:var(--navy);font-size:0.82rem;font-weight:600;">Week {{ current_week.week_number }}</span>{% endif %}
+</div>
 
 {# ---- Weekly Awards ---- #}
 {% if current_week %}
-<h5 class="mb-3">Week {{ current_week.week_number }} Awards</h5>
+<h5 class="section-header mb-3">Week {{ current_week.week_number }} Awards</h5>
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="card border-success h-100">
-            <div class="card-header bg-success text-white py-1 small fw-semibold">Best Hitter</div>
-            <div class="card-body py-2">
+        <div class="card award-card-best h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-success mb-1">Best Hitter</div>
                 {% if best_hitter %}
                 <div class="fw-bold">
-                    <a href="{% url 'league:player_detail' best_hitter.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                    <a href="{% url 'league:player_detail' best_hitter.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                         {{ best_hitter.first_name }} {{ best_hitter.last_name }}
                     </a>
                 </div>
@@ -32,12 +32,12 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-danger h-100">
-            <div class="card-header bg-danger text-white py-1 small fw-semibold">Worst Hitter</div>
-            <div class="card-body py-2">
+        <div class="card award-card-worst h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-danger mb-1">Worst Hitter</div>
                 {% if worst_hitter %}
                 <div class="fw-bold">
-                    <a href="{% url 'league:player_detail' worst_hitter.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                    <a href="{% url 'league:player_detail' worst_hitter.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                         {{ worst_hitter.first_name }} {{ worst_hitter.last_name }}
                     </a>
                 </div>
@@ -50,12 +50,12 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-success h-100">
-            <div class="card-header bg-success text-white py-1 small fw-semibold">Best Pitcher</div>
-            <div class="card-body py-2">
+        <div class="card award-card-best h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-success mb-1">Best Pitcher</div>
                 {% if best_pitcher %}
                 <div class="fw-bold">
-                    <a href="{% url 'league:player_detail' best_pitcher.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                    <a href="{% url 'league:player_detail' best_pitcher.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                         {{ best_pitcher.first_name }} {{ best_pitcher.last_name }}
                     </a>
                 </div>
@@ -68,12 +68,12 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-danger h-100">
-            <div class="card-header bg-danger text-white py-1 small fw-semibold">Worst Pitcher</div>
-            <div class="card-body py-2">
+        <div class="card award-card-worst h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-danger mb-1">Worst Pitcher</div>
                 {% if worst_pitcher %}
                 <div class="fw-bold">
-                    <a href="{% url 'league:player_detail' worst_pitcher.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                    <a href="{% url 'league:player_detail' worst_pitcher.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                         {{ worst_pitcher.first_name }} {{ worst_pitcher.last_name }}
                     </a>
                 </div>
@@ -90,25 +90,25 @@
 
 {# ---- Hot / Cold Streaks ---- #}
 {% if hot_hitters or hot_pitchers %}
-<h5 class="mb-3">Streaks</h5>
+<h5 class="section-header mb-3">Streaks</h5>
 <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-        <div class="card border-success h-100">
-            <div class="card-header bg-success text-white py-1 small fw-semibold">Hot Hitters</div>
-            <div class="card-body py-2">
+        <div class="card award-card-best h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-success mb-2">Hot Hitters</div>
                 {% if hot_hitters %}
                 {% for entry in hot_hitters %}{% if entry.hot > 0 %}
                 <div class="{% if not forloop.first %}mt-2 pt-2 border-top{% endif %}">
                     <div class="fw-bold small">
-                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
                     <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-{{ entry.player.position|position_badge_color }}">{{ entry.player.position }}</span> &middot; {{ entry.player.fantasy_team }}</div>
-                    <div class="text-success small fw-semibold">{{ entry.hot }} game{{ entry.hot|pluralize }} above league average</div>
+                    <div class="text-success small fw-semibold">{{ entry.hot }} game{{ entry.hot|pluralize }} above avg</div>
                 </div>
                 {% endif %}{% endfor %}
-                <div class="text-muted small mt-2">League Average: {{ hit_avg }} pts/game</div>
+                <div class="text-muted small mt-2">League avg: {{ hit_avg }} pts/game</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
                 {% endif %}
@@ -116,22 +116,22 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-danger h-100">
-            <div class="card-header bg-danger text-white py-1 small fw-semibold">Cold Hitters</div>
-            <div class="card-body py-2">
+        <div class="card award-card-worst h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-danger mb-2">Cold Hitters</div>
                 {% if cold_hitters %}
                 {% for entry in cold_hitters %}{% if entry.cold > 0 %}
                 <div class="{% if not forloop.first %}mt-2 pt-2 border-top{% endif %}">
                     <div class="fw-bold small">
-                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
                     <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-{{ entry.player.position|position_badge_color }}">{{ entry.player.position }}</span> &middot; {{ entry.player.fantasy_team }}</div>
-                    <div class="text-danger small fw-semibold">{{ entry.cold }} game{{ entry.cold|pluralize }} below league average</div>
+                    <div class="text-danger small fw-semibold">{{ entry.cold }} game{{ entry.cold|pluralize }} below avg</div>
                 </div>
                 {% endif %}{% endfor %}
-                <div class="text-muted small mt-2">League Average: {{ hit_avg }} pts/game</div>
+                <div class="text-muted small mt-2">League avg: {{ hit_avg }} pts/game</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
                 {% endif %}
@@ -139,22 +139,22 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-success h-100">
-            <div class="card-header bg-success text-white py-1 small fw-semibold">Hot Pitchers</div>
-            <div class="card-body py-2">
+        <div class="card award-card-best h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-success mb-2">Hot Pitchers</div>
                 {% if hot_pitchers %}
                 {% for entry in hot_pitchers %}{% if entry.hot > 0 %}
                 <div class="{% if not forloop.first %}mt-2 pt-2 border-top{% endif %}">
                     <div class="fw-bold small">
-                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
                     <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {{ entry.player.fantasy_team }}</div>
-                    <div class="text-success small fw-semibold">{{ entry.hot }} game{{ entry.hot|pluralize }} above league average</div>
+                    <div class="text-success small fw-semibold">{{ entry.hot }} game{{ entry.hot|pluralize }} above avg</div>
                 </div>
                 {% endif %}{% endfor %}
-                <div class="text-muted small mt-2">League Average: {{ pit_avg }} pts/game</div>
+                <div class="text-muted small mt-2">League avg: {{ pit_avg }} pts/game</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
                 {% endif %}
@@ -162,22 +162,22 @@
         </div>
     </div>
     <div class="col-6 col-md-3">
-        <div class="card border-danger h-100">
-            <div class="card-header bg-danger text-white py-1 small fw-semibold">Cold Pitchers</div>
-            <div class="card-body py-2">
+        <div class="card award-card-worst h-100">
+            <div class="card-body py-2 px-3">
+                <div class="small fw-semibold text-danger mb-2">Cold Pitchers</div>
                 {% if cold_pitchers %}
                 {% for entry in cold_pitchers %}{% if entry.cold > 0 %}
                 <div class="{% if not forloop.first %}mt-2 pt-2 border-top{% endif %}">
                     <div class="fw-bold small">
-                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none">
+                        <a href="{% url 'league:player_detail' entry.player.id %}?next={{ request.get_full_path|urlencode }}&back=home" class="text-decoration-none text-dark">
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
                     <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {{ entry.player.fantasy_team }}</div>
-                    <div class="text-danger small fw-semibold">{{ entry.cold }} game{{ entry.cold|pluralize }} below league average</div>
+                    <div class="text-danger small fw-semibold">{{ entry.cold }} game{{ entry.cold|pluralize }} below avg</div>
                 </div>
                 {% endif %}{% endfor %}
-                <div class="text-muted small mt-2">League Average: {{ pit_avg }} pts/game</div>
+                <div class="text-muted small mt-2">League avg: {{ pit_avg }} pts/game</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
                 {% endif %}
@@ -191,12 +191,12 @@
 {% if today_ll_games %}
 <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">Recent Liberty League Games</h5>
+        <h5 class="section-header mb-0">Recent Liberty League Games</h5>
         <a href="{% url 'league:ll_schedule' %}" class="btn btn-sm btn-outline-secondary">Full Schedule</a>
     </div>
     <div class="table-responsive">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Date</th>
                     <th>Matchup</th>
@@ -236,13 +236,13 @@
     {# Matchups #}
     <div class="col-md-6">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">This Week's Matchups</h5>
+            <h5 class="section-header mb-0">This Week's Matchups</h5>
             <a href="{% url 'league:matchup' %}" class="btn btn-sm btn-outline-secondary">Full View</a>
         </div>
         {% if matchups %}
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle mb-0">
-                <thead class="table-dark">
+                <thead class="table-navy">
                     <tr>
                         <th>Team</th>
                         <th class="text-end">Pts</th>
@@ -288,13 +288,13 @@
     {# Standings #}
     <div class="col-md-6">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">Standings</h5>
+            <h5 class="section-header mb-0">Standings</h5>
             <a href="{% url 'league:standings' %}" class="btn btn-sm btn-outline-secondary">Full View</a>
         </div>
         {% if standings %}
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle mb-0">
-                <thead class="table-dark">
+                <thead class="table-navy">
                     <tr>
                         <th>#</th>
                         <th>Team</th>
@@ -306,7 +306,7 @@
                 </thead>
                 <tbody>
                     {% for s in standings %}
-                    <tr {% if s.team == request.fantasy_team %}class="table-primary"{% endif %}>
+                    <tr {% if s.team == request.fantasy_team %}class="table-row-highlight"{% endif %}>
                         <td>{{ forloop.counter }}</td>
                         <td><a href="{% url 'league:roster' s.team.id %}" class="text-decoration-none">{{ s.team }}</a></td>
                         <td class="text-center">{{ s.wins }}</td>
@@ -331,13 +331,13 @@
     {# FA Hitters #}
     <div class="col-md-6">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">Top Free Agent Hitters</h5>
+            <h5 class="section-header mb-0">Top Free Agent Hitters</h5>
             <a href="{% url 'league:players' %}?position=hitters" class="btn btn-sm btn-outline-secondary">View All</a>
         </div>
         {% if fa_hitters %}
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle mb-0">
-                <thead class="table-dark">
+                <thead class="table-navy">
                     <tr>
                         <th>Player</th>
                         <th>Pos</th>
@@ -365,13 +365,13 @@
     {# FA Pitchers #}
     <div class="col-md-6">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0">Top Free Agent Pitchers</h5>
+            <h5 class="section-header mb-0">Top Free Agent Pitchers</h5>
             <a href="{% url 'league:players' %}?position=P" class="btn btn-sm btn-outline-secondary">View All</a>
         </div>
         {% if fa_pitchers %}
         <div class="table-responsive">
             <table class="table table-sm table-striped align-middle mb-0">
-                <thead class="table-dark">
+                <thead class="table-navy">
                     <tr>
                         <th>Player</th>
                         <th>School</th>

@@ -16,7 +16,8 @@
 
     <div class="row g-4 mb-4">
         <div class="col-md-6">
-            <h5>You Give</h5>
+            <div class="card p-3">
+            <h5 class="section-header mb-3">You Give</h5>
             <div id="give-container">
                 {% if prefill_give %}
                     {% for val in prefill_give %}
@@ -49,10 +50,12 @@
                 {% endif %}
             </div>
             <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-give">+ Add</button>
+            </div>
         </div>
 
         <div class="col-md-6">
-            <h5>You Receive</h5>
+            <div class="card p-3">
+            <h5 class="section-header mb-3">You Receive</h5>
             <div id="receive-container">
                 {% if prefill_receive %}
                     {% for val in prefill_receive %}
@@ -85,6 +88,7 @@
                 {% endif %}
             </div>
             <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="add-receive">+ Add</button>
+            </div>
         </div>
     </div>
 

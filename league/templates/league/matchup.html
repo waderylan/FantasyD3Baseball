@@ -61,25 +61,29 @@
 {% endif %}
 
 {# ---- Scoreboard ---- #}
-<div class="row text-center mb-4">
-    <div class="col-5">
-        <a href="{% url 'league:roster' matchup.team_1.id %}" class="text-decoration-none">
-            <h3>{{ matchup.team_1 }}</h3>
-        </a>
-        <h1 class="display-4 fw-bold">{{ t1_pts|pts_format }}</h1>
-    </div>
-    <div class="col-2 d-flex align-items-center justify-content-center">
-        <h2 class="text-muted">vs</h2>
-    </div>
-    <div class="col-5">
-        {% if matchup.team_2 %}
-        <a href="{% url 'league:roster' matchup.team_2.id %}" class="text-decoration-none">
-            <h3>{{ matchup.team_2 }}</h3>
-        </a>
-        <h1 class="display-4 fw-bold">{{ t2_pts|pts_format }}</h1>
-        {% else %}
-        <h3 class="text-muted fst-italic">BYE</h3>
-        {% endif %}
+<div class="card mb-4">
+    <div class="card-body py-4">
+        <div class="row text-center">
+            <div class="col-5">
+                <a href="{% url 'league:roster' matchup.team_1.id %}" class="text-decoration-none" style="color:var(--navy);">
+                    <h3 class="fw-bold mb-1">{{ matchup.team_1 }}</h3>
+                </a>
+                <div class="display-4 fw-bold" style="font-size:3rem; color:var(--navy);">{{ t1_pts|pts_format }}</div>
+            </div>
+            <div class="col-2 d-flex align-items-center justify-content-center">
+                <span class="text-muted fs-3 fw-light">vs</span>
+            </div>
+            <div class="col-5">
+                {% if matchup.team_2 %}
+                <a href="{% url 'league:roster' matchup.team_2.id %}" class="text-decoration-none" style="color:var(--navy);">
+                    <h3 class="fw-bold mb-1">{{ matchup.team_2 }}</h3>
+                </a>
+                <div class="display-4 fw-bold" style="font-size:3rem; color:var(--navy);">{{ t2_pts|pts_format }}</div>
+                {% else %}
+                <h3 class="text-muted fst-italic">BYE</h3>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -88,12 +92,12 @@
 
 {# ========= TEAM 1 ========= #}
 <div class="col-md-6 mb-4">
-    <h5 class="mb-3 fw-bold">{{ matchup.team_1 }}</h5>
+    <h5 class="section-header mb-3">{{ matchup.team_1 }}</h5>
 
     {# --- Hitters + Hitting Bench --- #}
     <div class="table-responsive mb-3">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Slot</th>
                     <th>Player</th>
@@ -168,7 +172,7 @@
     {# --- Pitchers + Pitching Bench --- #}
     <div class="table-responsive mb-2">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Slot</th>
                     <th>Player</th>
@@ -226,7 +230,7 @@
     {% if t1_breakdown.coach_slots %}
     <div class="table-responsive mb-2">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Slot</th>
                     <th>Coach</th>
@@ -252,12 +256,12 @@
 {# ========= TEAM 2 ========= #}
 {% if matchup.team_2 %}
 <div class="col-md-6 mb-4">
-    <h5 class="mb-3 fw-bold">{{ matchup.team_2 }}</h5>
+    <h5 class="section-header mb-3">{{ matchup.team_2 }}</h5>
 
     {# --- Hitters + Hitting Bench --- #}
     <div class="table-responsive mb-3">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Slot</th>
                     <th>Player</th>
@@ -332,7 +336,7 @@
     {# --- Pitchers + Pitching Bench --- #}
     <div class="table-responsive mb-2">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Slot</th>
                     <th>Player</th>
@@ -390,7 +394,7 @@
     {% if t2_breakdown.coach_slots %}
     <div class="table-responsive mb-2">
         <table class="table table-sm table-striped align-middle mb-0">
-            <thead class="table-dark">
+            <thead class="table-navy">
                 <tr>
                     <th>Slot</th>
                     <th>Coach</th>

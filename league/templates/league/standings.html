@@ -8,7 +8,7 @@
 
 <div class="table-responsive">
     <table class="table table-striped">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th>Rank</th>
                 <th>Team</th>
@@ -22,7 +22,7 @@
         </thead>
         <tbody>
             {% for s in standings %}
-            <tr{% if s.team == request.fantasy_team %} class="table-primary"{% endif %}>
+            <tr{% if s.team == request.fantasy_team %} class="table-row-highlight"{% endif %}>
                 <td>{{ forloop.counter }}</td>
                 <td>
                     <a href="{% url 'league:roster' s.team.id %}">{{ s.team }}</a>

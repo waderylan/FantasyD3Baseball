@@ -1,15 +1,307 @@
-body {
-    background-color: #f8f9fa;
+:root {
+  --navy: #1e3a5f;
+  --navy-mid: #2d5a9e;
+  --navy-light: #e8eef7;
+  --bg: #f5f7fa;
+  --card-bg: #ffffff;
+  --text: #212529;
+  --text-muted: #6c757d;
+  --border: #dee2e6;
+  --sidebar-width: 220px;
 }
 
+/* =====================
+   BASE
+   ===================== */
+body {
+    background-color: var(--bg);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+}
+
+h1, h2 {
+    color: var(--navy);
+    font-weight: 700;
+}
+
+/* =====================
+   SIDEBAR
+   ===================== */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    background-color: var(--navy);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: transform 0.25s ease;
+}
+
+.sidebar-brand {
+    padding: 1.25rem 1rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    margin-bottom: 0.35rem;
+    flex-shrink: 0;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 0.25rem 0;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 1rem;
+    color: rgba(255, 255, 255, 0.78);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background 0.15s, color 0.15s, border-left-color 0.15s;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+}
+
+.sidebar-link:hover {
+    background-color: rgba(255,255,255,0.1);
+    color: #fff;
+    border-left-color: rgba(255,255,255,0.35);
+}
+
+.sidebar-link.active {
+    background-color: rgba(255,255,255,0.15);
+    color: #fff;
+    font-weight: 600;
+    border-left-color: #fff;
+}
+
+.sidebar-link i {
+    font-size: 0.95rem;
+    width: 1.1rem;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.sidebar-link-commissioner {
+    color: #f5c842 !important;
+}
+
+.sidebar-link-commissioner:hover {
+    color: #ffd966 !important;
+}
+
+.sidebar-footer {
+    padding: 0.5rem 0 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    flex-shrink: 0;
+}
+
+.sidebar-team-name {
+    padding: 0.65rem 1rem 0.35rem;
+    color: rgba(255,255,255,0.45);
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =====================
+   MOBILE SIDEBAR
+   ===================== */
+.sidebar-toggle {
+    position: fixed;
+    top: 0.85rem;
+    right: 0.85rem;
+    z-index: 1100;
+    background: var(--navy);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.35rem 0.55rem;
+    font-size: 1.3rem;
+    line-height: 1;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 999;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+    .sidebar-toggle {
+        display: block;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 1rem !important;
+    }
+}
+
+/* =====================
+   MAIN CONTENT
+   ===================== */
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: 2rem 2.25rem;
+    min-height: 100vh;
+}
+
+.main-content-full {
+    margin-left: 0;
+    padding: 3rem 1rem;
+}
+
+/* =====================
+   CARDS
+   ===================== */
+.card {
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.055);
+    background: var(--card-bg);
+}
+
+/* =====================
+   TABLES
+   ===================== */
 .table th {
     white-space: nowrap;
 }
 
-.card {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+thead.table-navy th {
+    background-color: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-.navbar-brand {
-    font-weight: bold;
+.table-row-highlight td {
+    background-color: var(--navy-light) !important;
+}
+
+/* =====================
+   SECTION HEADERS
+   ===================== */
+.section-header {
+    color: var(--navy);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-left: 3px solid var(--navy);
+    padding-left: 0.55rem;
+    line-height: 1.3;
+}
+
+/* =====================
+   AWARD / STREAK CARDS
+   ===================== */
+.award-card-best {
+    border-left: 4px solid #198754 !important;
+    border-top: 1px solid var(--border) !important;
+    border-right: 1px solid var(--border) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.award-card-worst {
+    border-left: 4px solid #dc3545 !important;
+    border-top: 1px solid var(--border) !important;
+    border-right: 1px solid var(--border) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+/* =====================
+   BUTTONS
+   ===================== */
+.btn-primary {
+    background-color: var(--navy);
+    border-color: var(--navy);
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--navy-mid);
+    border-color: var(--navy-mid);
+}
+
+.btn-primary:focus-visible {
+    box-shadow: 0 0 0 0.25rem rgba(30, 58, 95, 0.35);
+}
+
+.btn-outline-primary {
+    color: var(--navy);
+    border-color: var(--navy);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+}
+
+.btn-dark {
+    background-color: var(--navy);
+    border-color: var(--navy);
+}
+
+.btn-dark:hover,
+.btn-dark:active {
+    background-color: var(--navy-mid);
+    border-color: var(--navy-mid);
+}
+
+.btn-outline-dark {
+    color: var(--navy);
+    border-color: var(--navy);
+}
+
+.btn-outline-dark:hover {
+    background-color: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+}
+
+/* =====================
+   PAGINATION
+   ===================== */
+.page-link {
+    color: var(--navy);
+    border-color: var(--border);
+}
+
+.page-link:hover {
+    color: var(--navy-mid);
+    background-color: var(--navy-light);
+    border-color: var(--border);
+}
+
+.page-item.active .page-link {
+    background-color: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+}
+
+.page-item.disabled .page-link {
+    color: var(--text-muted);
 }

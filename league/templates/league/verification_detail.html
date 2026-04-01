@@ -4,13 +4,14 @@
 {% block title %}{{ player }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-start mb-2">
+<div class="card mb-3 border-0 shadow-sm">
+<div class="card-body py-3 d-flex justify-content-between align-items-start">
     <div>
         <h2 class="mb-1">{{ player }}</h2>
         <p class="mb-0">
-            <span class="badge bg-{{ player.position|position_badge_color }}">{{ player.position }}</span> |
-            <strong>Real Team:</strong> {{ player.real_team.name }}
-            {% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team }}{% endif %}
+            <span class="badge bg-{{ player.position|position_badge_color }}">{{ player.position }}</span>
+            <span class="text-muted ms-1">{{ player.real_team.name }}</span>
+            {% if player.fantasy_team %}<span class="text-muted ms-2">&middot; {{ player.fantasy_team }}</span>{% endif %}
         </p>
     </div>
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
@@ -32,11 +33,12 @@
         {% endif %}
     {% endif %}
 </div>
+</div>
 
 {% if player.is_pitcher %}
 <div class="table-responsive">
     <table class="table table-striped">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th>Date</th>
                 <th>Game</th>
@@ -84,7 +86,7 @@
             <tr><td colspan="{% if request.fantasy_team.is_commissioner %}13{% elif request.fantasy_team %}13{% else %}12{% endif %}" class="text-center">No game logs.</td></tr>
             {% endfor %}
             {% if log_data %}
-            <tr class="table-dark fw-bold">
+            <tr style="background-color:var(--navy);color:#fff;font-weight:600;">
                 <td colspan="2">Totals</td>
                 <td class="text-end">{{ totals.outs|ip_display }}</td>
                 <td class="text-end">{{ totals.hits }}</td>
@@ -104,7 +106,7 @@
 {% else %}
 <div class="table-responsive">
     <table class="table table-striped">
-        <thead class="table-dark">
+        <thead class="table-navy">
             <tr>
                 <th>Date</th>
                 <th>Game</th>
@@ -155,7 +157,7 @@
             <tr><td colspan="{% if request.fantasy_team.is_commissioner %}17{% elif request.fantasy_team %}17{% else %}16{% endif %}" class="text-center">No game logs.</td></tr>
             {% endfor %}
             {% if log_data %}
-            <tr class="table-dark fw-bold">
+            <tr style="background-color:var(--navy);color:#fff;font-weight:600;">
                 <td colspan="2">Totals</td>
                 <td class="text-end">{{ totals.ab }}</td>
                 <td class="text-end">{{ totals.runs }}</td>
