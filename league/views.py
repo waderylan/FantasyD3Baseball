@@ -427,12 +427,29 @@ def ll_schedule_view(request):
     if not request.fantasy_team:
         return redirect('league:login')
     games = ScheduledGame.objects.all().order_by('date', 'game_time', 'id')
-    grouped = [
-        {'date': date, 'games': list(day_games)}
-        for date, day_games in groupby(games, key=lambda g: g.date)
-    ]
+
+    grouped = []
+    months = []
+    seen_months = set()
+    for date, day_games in groupby(games, key=lambda g: g.date):
+        month_key = (date.year, date.month)
+        is_month_start = month_key not in seen_months
+        if is_month_start:
+            seen_months.add(month_key)
+            months.append({
+                'label': date.strftime('%B'),
+                'id': f'month-{date.year}-{date.month:02d}',
+            })
+        grouped.append({
+            'date': date,
+            'games': list(day_games),
+            'is_month_start': is_month_start,
+            'month_id': f'month-{date.year}-{date.month:02d}',
+        })
+
     return render(request, 'league/ll_schedule.html', {
         'grouped_games': grouped,
+        'months': months,
         'today': datetime.date.today(),
     })
 

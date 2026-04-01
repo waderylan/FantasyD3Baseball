@@ -268,6 +268,7 @@ def ingest_schedule(request):
                     'away_score':     g.get('away_score'),
                     'home_score':     g.get('home_score'),
                     'status':         g['status'],
+                    'box_score_url':  g.get('box_score_url', ''),
                 },
             )
             upserted += 1

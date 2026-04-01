@@ -59,6 +59,7 @@ class Command(BaseCommand):
                     'away_score':      g.away_score,
                     'home_score':      g.home_score,
                     'status':          g.status,
+                    'box_score_url':   g.box_score_url,
                 }
                 for g in games
             ]

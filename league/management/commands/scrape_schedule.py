@@ -98,18 +98,29 @@ def _detect_status_and_time(tr_text):
     return 'UPCOMING', ''
 
 
-def _source_event_id_from_row(tr, date, away, home, game_time=''):
-    """Extract a stable ID from any link in the TR, falling back to a hash."""
+_BOXSCORE_RE = re.compile(r'box\s*score|boxscore', re.I)
+
+
+def _parse_row_links(tr):
+    """Return (source_event_id, box_score_url) from links in the TR."""
+    event_id = None
+    box_score_url = ''
     for a in tr.find_all('a', href=True):
         href = a['href']
+        text = a.get_text(strip=True)
+        is_boxscore = _BOXSCORE_RE.search(text) or 'boxscore' in href.lower()
+        if is_boxscore and not box_score_url:
+            full = href if href.startswith('http') else urllib.parse.urljoin('https://libertyleagueathletics.com', href)
+            box_score_url = full
         parsed = urllib.parse.urlparse(href)
         qs = urllib.parse.parse_qs(parsed.query)
-        if 'id' in qs:
-            return qs['id'][0]
-        for key in ('event_id', 'eventid', 'gameid', 'game_id'):
-            if key in qs:
-                return qs[key][0]
-    # Fallback: include time so doubleheaders (same date/teams, different times) get distinct IDs
+        for key in ('id', 'event_id', 'eventid', 'gameid', 'game_id'):
+            if key in qs and event_id is None:
+                event_id = qs[key][0]
+    return event_id, box_score_url
+
+
+def _source_event_id_fallback(date, away, home, game_time=''):
     raw = f"{date}|{away.lower()}|{home.lower()}|{game_time.lower()}"
     return hashlib.md5(raw.encode()).hexdigest()[:20]
 
@@ -243,7 +254,9 @@ class Command(BaseCommand):
                     if away_score is not None and home_score is not None:
                         status = 'FINAL'
 
-                    event_id = _source_event_id_from_row(tr, game_date, away_name, home_name, game_time)
+                    event_id, box_score_url = _parse_row_links(tr)
+                    if not event_id:
+                        event_id = _source_event_id_fallback(game_date, away_name, home_name, game_time)
 
                     all_games[event_id] = {
                         'date': game_date,
@@ -254,6 +267,7 @@ class Command(BaseCommand):
                         'home_score': home_score,
                         'status': status,
                         'source_event_id': event_id,
+                        'box_score_url': box_score_url,
                     }
 
             browser.close()
@@ -285,6 +299,7 @@ class Command(BaseCommand):
                         'away_score':     g['away_score'],
                         'home_score':     g['home_score'],
                         'status':         g['status'],
+                        'box_score_url':  g['box_score_url'],
                     },
                 )
                 if created:

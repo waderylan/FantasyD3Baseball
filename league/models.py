@@ -553,6 +553,7 @@ class ScheduledGame(models.Model):
     home_score      = models.IntegerField(null=True, blank=True)
     status          = models.CharField(max_length=12, choices=GAME_STATUS_CHOICES, default='UPCOMING')
     source_event_id = models.CharField(max_length=200, unique=True)
+    box_score_url   = models.URLField(max_length=500, blank=True, default='')
     last_updated    = models.DateTimeField(auto_now=True)
 
     class Meta:
