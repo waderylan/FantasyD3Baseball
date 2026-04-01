@@ -19,6 +19,12 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}
+
       - name: Install Playwright Chromium
         run: uv run playwright install chromium --with-deps
 
