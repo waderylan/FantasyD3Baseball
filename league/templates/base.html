@@ -33,7 +33,10 @@
                         <a class="nav-link" href="{% url 'league:standings' %}">Standings</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'league:schedule' %}">Schedule</a>
+                        <a class="nav-link" href="{% url 'league:schedule' %}">Fantasy Schedule</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'll_schedule' %}active{% endif %}" href="{% url 'league:ll_schedule' %}">LL Schedule</a>
                     </li>
                     {% comment %}<li class="nav-item">
                         <a class="nav-link" href="{% url 'league:game_list' %}">Games</a>

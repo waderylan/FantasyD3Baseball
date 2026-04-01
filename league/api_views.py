@@ -53,7 +53,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import HittingGameLog, PitchingGameLog, Player, RealGame, RealTeam
+from .models import HittingGameLog, PitchingGameLog, Player, RealGame, RealTeam, ScheduledGame
 from .scoring import refresh_player_points, refresh_all_coaches
 
 logger = logging.getLogger('league')
@@ -220,6 +220,63 @@ def ingest(request):
         'players_refreshed': len(affected_players),
         'warnings': warnings,
     })
+
+
+@csrf_exempt
+@require_POST
+def ingest_schedule(request):
+    """Receive scraped LL schedule data and upsert into ScheduledGame."""
+    secret = settings.INGEST_SECRET
+    if not secret:
+        logger.error('INGEST_SECRET is not configured')
+        return JsonResponse({'error': 'ingest endpoint not configured'}, status=500)
+
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if not auth_header.startswith('Bearer ') or auth_header[7:] != secret:
+        logger.warning('Schedule ingest auth failure from %s', request.META.get('REMOTE_ADDR'))
+        return JsonResponse({'error': 'unauthorized'}, status=401)
+
+    try:
+        payload = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return JsonResponse({'error': f'invalid JSON: {exc}'}, status=400)
+
+    if not isinstance(payload, dict) or 'schedule' not in payload:
+        return JsonResponse({'error': 'payload must be {"schedule": [...]}'}, status=400)
+
+    schedule_data = payload['schedule']
+    if not isinstance(schedule_data, list):
+        return JsonResponse({'error': '"schedule" must be a list'}, status=400)
+
+    warnings = []
+    upserted = 0
+
+    for idx, g in enumerate(schedule_data):
+        required = {'source_event_id', 'date', 'away_team_name', 'home_team_name', 'status'}
+        missing = required - set(g.keys())
+        if missing:
+            warnings.append(f'schedule[{idx}]: missing {sorted(missing)}, skipped')
+            continue
+        try:
+            ScheduledGame.objects.update_or_create(
+                source_event_id=g['source_event_id'],
+                defaults={
+                    'date':           g['date'],
+                    'away_team_name': g['away_team_name'],
+                    'home_team_name': g['home_team_name'],
+                    'game_time':      g.get('game_time', ''),
+                    'away_score':     g.get('away_score'),
+                    'home_score':     g.get('home_score'),
+                    'status':         g['status'],
+                },
+            )
+            upserted += 1
+        except Exception as exc:
+            warnings.append(f'schedule[{idx}]: {exc}')
+
+    logger.info('Schedule ingest: %d games upserted, %d warnings', upserted, len(warnings))
+
+    return JsonResponse({'status': 'ok', 'games_upserted': upserted, 'warnings': warnings})
 
 
 # ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ app_name = 'league'
 urlpatterns = [
     # Ingest API (no session auth — uses Bearer token)
     path('api/ingest/', api_views.ingest, name='ingest'),
+    path('api/ingest/schedule/', api_views.ingest_schedule, name='ingest_schedule'),
 
     # Auth
     path('', views.login_view, name='home'),
@@ -26,6 +27,7 @@ urlpatterns = [
     path('schedule/', views.schedule_view, name='schedule'),
     path('schedule/week/<int:week_id>/matchup/<int:matchup_id>/',
          views.weekly_matchup_view, name='weekly_matchup'),
+    path('ll-schedule/', views.ll_schedule_view, name='ll_schedule'),
 
     # Matchup page
     path('matchup/', views.matchup_view, name='matchup'),

@@ -14,7 +14,7 @@ from .models import (
     FantasyTeam, Player, RealTeam, RealGame,
     HittingGameLog, PitchingGameLog, PointSettings,
     Week, Matchup, RosterSlot, WeeklyLineupSlot, Transaction, PendingRequest, ActivityEntry,
-    LeagueSettings, Trade, TradeItem, ExcludedDay, Coach,
+    LeagueSettings, Trade, TradeItem, ExcludedDay, Coach, ScheduledGame,
     PITCHING_POSITIONS, POSITION_CHOICES, SLOT_LIMITS, SLOT_ELIGIBLE, SLOT_ORDER,
 )
 from .forms import (
@@ -357,6 +357,11 @@ def home_view(request):
     # Hot/cold streaks
     streaks = _calc_streaks(ps)
 
+    # Recent LL games (yesterday and today)
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
+    today_ll_games = list(ScheduledGame.objects.filter(date__in=[yesterday, today]).order_by('date', 'game_time', 'id'))
+
     return render(request, 'league/home.html', {
         'current_week': current_week,
         'matchups': matchups_data,
@@ -367,6 +372,7 @@ def home_view(request):
         'worst_pitcher': worst_pitcher,
         'fa_hitters': fa_hitters,
         'fa_pitchers': fa_pitchers,
+        'today_ll_games': today_ll_games,
         **streaks,
     })
 
@@ -413,6 +419,21 @@ def schedule_view(request):
     return render(request, 'league/schedule.html', {
         'week_data': week_data,
         'current_week': current_week,
+    })
+
+
+def ll_schedule_view(request):
+    from itertools import groupby
+    if not request.fantasy_team:
+        return redirect('league:login')
+    games = ScheduledGame.objects.all().order_by('date', 'game_time', 'id')
+    grouped = [
+        {'date': date, 'games': list(day_games)}
+        for date, day_games in groupby(games, key=lambda g: g.date)
+    ]
+    return render(request, 'league/ll_schedule.html', {
+        'grouped_games': grouped,
+        'today': datetime.date.today(),
     })
 
 

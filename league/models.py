@@ -534,3 +534,29 @@ class Coach(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.real_team})"
+
+
+GAME_STATUS_CHOICES = [
+    ('UPCOMING',  'Upcoming'),
+    ('FINAL',     'Final'),
+    ('POSTPONED', 'Postponed'),
+    ('CANCELLED', 'Cancelled'),
+]
+
+
+class ScheduledGame(models.Model):
+    date            = models.DateField()
+    away_team_name  = models.CharField(max_length=150)
+    home_team_name  = models.CharField(max_length=150)
+    game_time       = models.CharField(max_length=30, blank=True, default='')
+    away_score      = models.IntegerField(null=True, blank=True)
+    home_score      = models.IntegerField(null=True, blank=True)
+    status          = models.CharField(max_length=12, choices=GAME_STATUS_CHOICES, default='UPCOMING')
+    source_event_id = models.CharField(max_length=200, unique=True)
+    last_updated    = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['date', 'game_time', 'id']
+
+    def __str__(self):
+        return f"{self.away_team_name} @ {self.home_team_name} ({self.date})"
