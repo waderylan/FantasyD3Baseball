@@ -357,6 +357,11 @@ def home_view(request):
     # Hot/cold streaks
     streaks = _calc_streaks(ps)
 
+    # Recent LL games (yesterday and today)
+    today = datetime.date.today()
+    yesterday = today - datetime.timedelta(days=1)
+    today_ll_games = list(ScheduledGame.objects.filter(date__in=[yesterday, today]).order_by('date', 'game_time', 'id'))
+
     return render(request, 'league/home.html', {
         'current_week': current_week,
         'matchups': matchups_data,
@@ -367,6 +372,7 @@ def home_view(request):
         'worst_pitcher': worst_pitcher,
         'fa_hitters': fa_hitters,
         'fa_pitchers': fa_pitchers,
+        'today_ll_games': today_ll_games,
         **streaks,
     })
 

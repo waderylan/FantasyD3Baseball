@@ -187,6 +187,49 @@
 </div>
 {% endif %}
 
+{# ---- Today's LL Games ---- #}
+{% if today_ll_games %}
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Recent Liberty League Games</h5>
+        <a href="{% url 'league:ll_schedule' %}" class="btn btn-sm btn-outline-secondary">Full Schedule</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Matchup</th>
+                    <th>Time</th>
+                    <th class="text-end">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for game in today_ll_games %}
+                <tr>
+                    <td class="text-muted small">{{ game.date|date:"M j" }}</td>
+                    <td>{{ game.away_team_name }} <strong>@</strong> {{ game.home_team_name }}</td>
+                    <td class="text-muted small">{{ game.game_time }}</td>
+                    <td class="text-end">
+                        {% if game.status == 'FINAL' %}
+                        <span class="text-muted me-1">{{ game.away_score }}&ndash;{{ game.home_score }}</span>
+                        <span class="badge bg-secondary">Final</span>
+                        {% elif game.status == 'POSTPONED' %}
+                        <span class="badge bg-warning text-dark">Postponed</span>
+                        {% elif game.status == 'CANCELLED' %}
+                        <span class="badge bg-danger">Cancelled</span>
+                        {% else %}
+                        <span class="badge bg-info text-dark">Upcoming</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 {# ---- Matchups + Standings ---- #}
 <div class="row g-4 mb-4">
 
