@@ -101,6 +101,7 @@ urlpatterns = [
     path('commissioner/real-teams/<int:team_id>/edit/', views.real_team_edit, name='real_team_edit'),
     path('commissioner/point-settings/', views.point_settings_view, name='point_settings'),
     path('commissioner/schedule/', views.generate_schedule_view, name='generate_schedule'),
+    path('commissioner/ll-schedule/<int:game_id>/delete/', views.delete_scheduled_game, name='delete_scheduled_game'),
     path('commissioner/game-log/<str:log_type>/<int:log_id>/edit/',
          views.edit_game_log, name='edit_game_log'),
 

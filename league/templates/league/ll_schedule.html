@@ -66,8 +66,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-auto text-end">
+                            <div class="col-auto text-end d-flex align-items-center gap-2">
                                 {% if game.box_score_url %}<a href="{{ game.box_score_url }}" target="_blank" class="btn btn-sm btn-outline-primary">Box Score</a>{% else %}<span class="badge bg-secondary">Final</span>{% endif %}
+                                {% if request.fantasy_team.is_commissioner %}<form method="post" action="{% url 'league:delete_scheduled_game' game.id %}" onsubmit="return confirm('Delete this game?')">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button></form>{% endif %}
                             </div>
                         </div>
                     </div>
@@ -91,8 +92,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-auto text-end">
+                            <div class="col-auto text-end d-flex align-items-center gap-2">
                                 {% if game.box_score_url %}<a href="{{ game.box_score_url }}" target="_blank" class="btn btn-sm btn-outline-primary">Box Score</a>{% else %}<span class="badge bg-secondary">Final</span>{% endif %}
+                                {% if request.fantasy_team.is_commissioner %}<form method="post" action="{% url 'league:delete_scheduled_game' game.id %}" onsubmit="return confirm('Delete this game?')">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button></form>{% endif %}
                             </div>
                         </div>
                     </div>
@@ -116,8 +118,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-auto text-end">
+                            <div class="col-auto text-end d-flex align-items-center gap-2">
                                 {% if game.box_score_url %}<a href="{{ game.box_score_url }}" target="_blank" class="btn btn-sm btn-outline-primary">Box Score</a>{% else %}<span class="badge bg-secondary">Final</span>{% endif %}
+                                {% if request.fantasy_team.is_commissioner %}<form method="post" action="{% url 'league:delete_scheduled_game' game.id %}" onsubmit="return confirm('Delete this game?')">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button></form>{% endif %}
                             </div>
                         </div>
                     </div>
@@ -140,17 +143,20 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-auto text-end">
-                            {% if game.status == 'POSTPONED' %}
-                                {% if game.game_time %}<div class="text-muted small mb-1">{{ game.game_time }}</div>{% endif %}
-                                <span class="badge bg-warning text-dark fs-6 px-3 py-2">Postponed</span>
-                            {% elif game.status == 'CANCELLED' %}
-                                {% if game.game_time %}<div class="text-muted small mb-1">{{ game.game_time }}</div>{% endif %}
-                                <span class="badge bg-danger fs-6 px-3 py-2">Cancelled</span>
-                            {% else %}
-                                {% if game.game_time %}<div class="fw-semibold text-primary fs-5">{{ game.game_time }}</div>{% endif %}
-                                <span class="badge bg-success px-3 py-2">Upcoming</span>
-                            {% endif %}
+                        <div class="col-auto text-end d-flex align-items-center gap-2">
+                            <div>
+                                {% if game.status == 'POSTPONED' %}
+                                    {% if game.game_time %}<div class="text-muted small mb-1">{{ game.game_time }}</div>{% endif %}
+                                    <span class="badge bg-warning text-dark fs-6 px-3 py-2">Postponed</span>
+                                {% elif game.status == 'CANCELLED' %}
+                                    {% if game.game_time %}<div class="text-muted small mb-1">{{ game.game_time }}</div>{% endif %}
+                                    <span class="badge bg-danger fs-6 px-3 py-2">Cancelled</span>
+                                {% else %}
+                                    {% if game.game_time %}<div class="fw-semibold text-primary fs-5">{{ game.game_time }}</div>{% endif %}
+                                    <span class="badge bg-success px-3 py-2">Upcoming</span>
+                                {% endif %}
+                            </div>
+                            {% if request.fantasy_team.is_commissioner %}<form method="post" action="{% url 'league:delete_scheduled_game' game.id %}" onsubmit="return confirm('Delete this game?')">{% csrf_token %}<button type="submit" class="btn btn-sm btn-outline-danger">Delete</button></form>{% endif %}
                         </div>
                     </div>
                 </div>

@@ -454,6 +454,14 @@ def ll_schedule_view(request):
     })
 
 
+@commissioner_required
+def delete_scheduled_game(request, game_id):
+    if request.method == 'POST':
+        game = get_object_or_404(ScheduledGame, pk=game_id)
+        game.delete()
+    return redirect('league:ll_schedule')
+
+
 def weekly_matchup_view(request, week_id, matchup_id):
     matchup = get_object_or_404(
         Matchup.objects.select_related('week', 'team_1', 'team_2'),
