@@ -289,23 +289,46 @@ class Command(BaseCommand):
 
         for event_id, g in all_games.items():
             try:
-                _, created = ScheduledGame.objects.update_or_create(
-                    source_event_id=event_id,
-                    defaults={
-                        'date':           g['date'],
-                        'away_team_name': g['away_team_name'],
-                        'home_team_name': g['home_team_name'],
-                        'game_time':      g['game_time'],
-                        'away_score':     g['away_score'],
-                        'home_score':     g['home_score'],
-                        'status':         g['status'],
-                        'box_score_url':  g['box_score_url'],
-                    },
-                )
-                if created:
-                    totals['created'] += 1
-                else:
+                # Match on natural key (date + teams) so that a game previously
+                # stored as UPCOMING (with a fallback hash ID) gets updated when
+                # it finishes and gains a real URL-based event ID, rather than
+                # creating a duplicate record.
+                matches = list(ScheduledGame.objects.filter(
+                    date=g['date'],
+                    away_team_name=g['away_team_name'],
+                    home_team_name=g['home_team_name'],
+                ))
+                if matches:
+                    # Prefer the record that already has the correct event_id
+                    # (handles stale duplicates left over from the original bug).
+                    primary = next(
+                        (m for m in matches if m.source_event_id == event_id),
+                        matches[0],
+                    )
+                    for dupe in matches:
+                        if dupe.pk != primary.pk:
+                            dupe.delete()
+                    primary.game_time       = g['game_time']
+                    primary.away_score      = g['away_score']
+                    primary.home_score      = g['home_score']
+                    primary.status          = g['status']
+                    primary.box_score_url   = g['box_score_url']
+                    primary.source_event_id = event_id
+                    primary.save()
                     totals['updated'] += 1
+                else:
+                    ScheduledGame.objects.create(
+                        source_event_id = event_id,
+                        date            = g['date'],
+                        away_team_name  = g['away_team_name'],
+                        home_team_name  = g['home_team_name'],
+                        game_time       = g['game_time'],
+                        away_score      = g['away_score'],
+                        home_score      = g['home_score'],
+                        status          = g['status'],
+                        box_score_url   = g['box_score_url'],
+                    )
+                    totals['created'] += 1
             except Exception as exc:
                 self.stderr.write(self.style.ERROR(f'  DB error for {event_id}: {exc}'))
                 totals['errors'] += 1
