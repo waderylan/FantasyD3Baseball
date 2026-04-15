@@ -1,22 +1,34 @@
 {% extends "base.html" %}
 {% load league_extras %}
 
-{% block title %}{{ viewed_team }} Roster{% endblock %}
+{% block title %}{% demo_team_name viewed_team %} Roster{% endblock %}
 
 {% block content %}
 <div class="card mb-3 border-0 shadow-sm">
     <div class="card-body py-3 px-3 d-flex justify-content-between align-items-center">
         <h2 class="mb-0 fs-4">
-            {{ viewed_team }}
+            {% demo_team_name viewed_team %}
             {% if is_locked_week %}<span class="badge bg-secondary ms-2" style="font-size:0.6em;vertical-align:middle;">Locked</span>{% endif %}
         </h2>
         {% if not is_locked_week %}
         {% if request.fantasy_team == viewed_team or request.fantasy_team.is_commissioner %}
         <div class="d-flex gap-2">
             {% if not request.fantasy_team.is_commissioner %}
+            {% if is_demo %}
+            <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                <button type="button" class="btn btn-sm" style="background-color:#fd7e14;color:#fff;opacity:0.65;pointer-events:none;" disabled>Trade</button>
+            </span>
+            {% else %}
             <a href="{% url 'league:trade_select_team' %}" class="btn btn-sm" style="background-color:#fd7e14;color:#fff;">Trade</a>
             {% endif %}
+            {% endif %}
+            {% if is_demo %}
+            <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                <button type="button" class="btn btn-sm btn-primary" disabled style="pointer-events:none;">Set Lineup</button>
+            </span>
+            {% else %}
             <a href="{% url 'league:set_lineup' viewed_team.id %}" class="btn btn-sm btn-primary">Set Lineup</a>
+            {% endif %}
         </div>
         {% endif %}
         {% endif %}
@@ -54,13 +66,13 @@
 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner %}
 {% for trade in incoming_trades %}
 <div class="alert alert-warning d-flex justify-content-between align-items-center py-2">
-    <span>Trade request from <strong>{{ trade.sender }}</strong></span>
+    <span>Trade request from <strong>{% demo_team_name trade.sender %}</strong></span>
     <a href="{% url 'league:trade_detail' trade.pk %}" class="btn btn-sm btn-warning">View</a>
 </div>
 {% endfor %}
 {% for trade in outgoing_trades %}
 <div class="alert alert-secondary d-flex justify-content-between align-items-center py-2">
-    <span>Pending trade with <strong>{{ trade.receiver }}</strong></span>
+    <span>Pending trade with <strong>{% demo_team_name trade.receiver %}</strong></span>
     <a href="{% url 'league:trade_detail' trade.pk %}" class="btn btn-sm btn-secondary">View</a>
 </div>
 {% endfor %}
@@ -117,6 +129,11 @@
                 <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events:none;">Drop</button>
+                    </span>
+                    {% else %}
                     <form method="post" action="{% url 'league:member_drop_player' entry.row.player.id %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -124,6 +141,7 @@
                             Drop
                         </button>
                     </form>
+                    {% endif %}
                 </td>
                 {% endif %}
                 {% else %}
@@ -177,6 +195,11 @@
                 <td class="text-end fw-bold">{{ entry.row.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events:none;">Drop</button>
+                    </span>
+                    {% else %}
                     <form method="post" action="{% url 'league:member_drop_player' entry.row.player.id %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -184,6 +207,7 @@
                             Drop
                         </button>
                     </form>
+                    {% endif %}
                 </td>
                 {% endif %}
                 {% else %}
@@ -219,6 +243,11 @@
                 <td class="text-end fw-bold">{{ row.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events:none;">Drop</button>
+                    </span>
+                    {% else %}
                     <form method="post" action="{% url 'league:member_drop_player' row.player.id %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger"
@@ -226,6 +255,7 @@
                             Drop
                         </button>
                     </form>
+                    {% endif %}
                 </td>
                 {% endif %}
             </tr>
@@ -267,6 +297,11 @@
                 <td class="text-end fw-bold">{{ cr.points|pts_format }}</td>
                 {% if request.fantasy_team == viewed_team and not request.fantasy_team.is_commissioner and not is_locked_week %}
                 <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events:none;">Drop</button>
+                    </span>
+                    {% else %}
                     <form method="post" action="{% url 'league:member_drop_coach' cr.coach.id %}">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -275,6 +310,7 @@
                             Drop
                         </button>
                     </form>
+                    {% endif %}
                 </td>
                 {% endif %}
             </tr>

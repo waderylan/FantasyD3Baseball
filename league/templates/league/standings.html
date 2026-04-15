@@ -25,7 +25,7 @@
             <tr{% if s.team == request.fantasy_team %} class="table-row-highlight"{% endif %}>
                 <td>{{ forloop.counter }}</td>
                 <td>
-                    <a href="{% url 'league:roster' s.team.id %}">{{ s.team }}</a>
+                    <a href="{% url 'league:roster' s.team.id %}">{% demo_team_name s.team %}</a>
                 </td>
                 <td class="text-center">{{ s.wins }}</td>
                 <td class="text-center">{{ s.losses }}</td>

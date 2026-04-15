@@ -23,7 +23,7 @@
                         {{ best_hitter.first_name }} {{ best_hitter.last_name }}
                     </a>
                 </div>
-                <div class="text-muted small">{{ best_hitter.real_team.abbreviation }} &middot; <span class="badge bg-{{ best_hitter.position|position_badge_color }}">{{ best_hitter.position }}</span> &middot; {{ best_hitter.fantasy_team }}</div>
+                <div class="text-muted small">{{ best_hitter.real_team.abbreviation }} &middot; <span class="badge bg-{{ best_hitter.position|position_badge_color }}">{{ best_hitter.position }}</span> &middot; {% demo_team_name best_hitter.fantasy_team %}</div>
                 <div class="mt-1 fw-bold text-success">{{ best_hitter.cached_weekly_points|pts_format }} pts</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
@@ -41,7 +41,7 @@
                         {{ worst_hitter.first_name }} {{ worst_hitter.last_name }}
                     </a>
                 </div>
-                <div class="text-muted small">{{ worst_hitter.real_team.abbreviation }} &middot; <span class="badge bg-{{ worst_hitter.position|position_badge_color }}">{{ worst_hitter.position }}</span> &middot; {{ worst_hitter.fantasy_team }}</div>
+                <div class="text-muted small">{{ worst_hitter.real_team.abbreviation }} &middot; <span class="badge bg-{{ worst_hitter.position|position_badge_color }}">{{ worst_hitter.position }}</span> &middot; {% demo_team_name worst_hitter.fantasy_team %}</div>
                 <div class="mt-1 fw-bold text-danger">{{ worst_hitter.cached_weekly_points|pts_format }} pts</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
@@ -59,7 +59,7 @@
                         {{ best_pitcher.first_name }} {{ best_pitcher.last_name }}
                     </a>
                 </div>
-                <div class="text-muted small">{{ best_pitcher.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {{ best_pitcher.fantasy_team }}</div>
+                <div class="text-muted small">{{ best_pitcher.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {% demo_team_name best_pitcher.fantasy_team %}</div>
                 <div class="mt-1 fw-bold text-success">{{ best_pitcher.cached_weekly_points|pts_format }} pts</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
@@ -77,7 +77,7 @@
                         {{ worst_pitcher.first_name }} {{ worst_pitcher.last_name }}
                     </a>
                 </div>
-                <div class="text-muted small">{{ worst_pitcher.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {{ worst_pitcher.fantasy_team }}</div>
+                <div class="text-muted small">{{ worst_pitcher.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {% demo_team_name worst_pitcher.fantasy_team %}</div>
                 <div class="mt-1 fw-bold text-danger">{{ worst_pitcher.cached_weekly_points|pts_format }} pts</div>
                 {% else %}
                 <span class="text-muted small">No data yet</span>
@@ -104,7 +104,7 @@
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
-                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-{{ entry.player.position|position_badge_color }}">{{ entry.player.position }}</span> &middot; {{ entry.player.fantasy_team }}</div>
+                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-{{ entry.player.position|position_badge_color }}">{{ entry.player.position }}</span> &middot; {% demo_team_name entry.player.fantasy_team %}</div>
                     <div class="text-success small fw-semibold">{{ entry.hot }} game{{ entry.hot|pluralize }} above avg</div>
                 </div>
                 {% endif %}{% endfor %}
@@ -127,7 +127,7 @@
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
-                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-{{ entry.player.position|position_badge_color }}">{{ entry.player.position }}</span> &middot; {{ entry.player.fantasy_team }}</div>
+                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-{{ entry.player.position|position_badge_color }}">{{ entry.player.position }}</span> &middot; {% demo_team_name entry.player.fantasy_team %}</div>
                     <div class="text-danger small fw-semibold">{{ entry.cold }} game{{ entry.cold|pluralize }} below avg</div>
                 </div>
                 {% endif %}{% endfor %}
@@ -150,7 +150,7 @@
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
-                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {{ entry.player.fantasy_team }}</div>
+                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {% demo_team_name entry.player.fantasy_team %}</div>
                     <div class="text-success small fw-semibold">{{ entry.hot }} game{{ entry.hot|pluralize }} above avg</div>
                 </div>
                 {% endif %}{% endfor %}
@@ -173,7 +173,7 @@
                             {{ entry.player.first_name }} {{ entry.player.last_name }}
                         </a>
                     </div>
-                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {{ entry.player.fantasy_team }}</div>
+                    <div class="text-muted small">{{ entry.player.real_team.abbreviation }} &middot; <span class="badge bg-danger">P</span> &middot; {% demo_team_name entry.player.fantasy_team %}</div>
                     <div class="text-danger small fw-semibold">{{ entry.cold }} game{{ entry.cold|pluralize }} below avg</div>
                 </div>
                 {% endif %}{% endfor %}
@@ -258,7 +258,7 @@
                         <td>
                             <a href="{% url 'league:weekly_matchup' current_week.id m.matchup.id %}" class="text-decoration-none
                                 {% if m.winner == m.matchup.team_1 %}fw-bold{% endif %}">
-                                {{ m.matchup.team_1 }}
+                                {% demo_team_name m.matchup.team_1 %}
                             </a>
                         </td>
                         <td class="text-end {% if m.winner == m.matchup.team_1 %}fw-bold{% endif %}">{{ m.t1_pts|pts_format }}</td>
@@ -266,12 +266,12 @@
                         <td>
                             <a href="{% url 'league:weekly_matchup' current_week.id m.matchup.id %}" class="text-decoration-none
                                 {% if m.winner == m.matchup.team_2 %}fw-bold{% endif %}">
-                                {{ m.matchup.team_2 }}
+                                {% demo_team_name m.matchup.team_2 %}
                             </a>
                         </td>
                         <td class="text-end {% if m.winner == m.matchup.team_2 %}fw-bold{% endif %}">{{ m.t2_pts|pts_format }}</td>
                         {% else %}
-                        <td colspan="2"><a href="{% url 'league:weekly_matchup' current_week.id m.matchup.id %}" class="text-decoration-none">{{ m.matchup.team_1 }}</a></td>
+                        <td colspan="2"><a href="{% url 'league:weekly_matchup' current_week.id m.matchup.id %}" class="text-decoration-none">{% demo_team_name m.matchup.team_1 %}</a></td>
                         <td class="text-center text-muted small">BYE</td>
                         <td colspan="2"></td>
                         {% endif %}
@@ -308,7 +308,7 @@
                     {% for s in standings %}
                     <tr {% if s.team == request.fantasy_team %}class="table-row-highlight"{% endif %}>
                         <td>{{ forloop.counter }}</td>
-                        <td><a href="{% url 'league:roster' s.team.id %}" class="text-decoration-none">{{ s.team }}</a></td>
+                        <td><a href="{% url 'league:roster' s.team.id %}" class="text-decoration-none">{% demo_team_name s.team %}</a></td>
                         <td class="text-center">{{ s.wins }}</td>
                         <td class="text-center">{{ s.losses }}</td>
                         <td class="text-center">{{ s.pct|pct_format }}</td>

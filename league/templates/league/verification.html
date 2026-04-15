@@ -5,17 +5,18 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <h2>Players</h2>
-        {% if not show_all and not selected_fantasy_team %}
-        <p class="text-muted mb-0">Showing free agents only &mdash;
-            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&show_all=1">Show all players</a>
-        </p>
-        {% else %}
-        <p class="text-muted mb-0">Showing all players &mdash;
-            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}">Show free agents only</a>
-        </p>
-        {% endif %}
+    <div class="d-flex align-items-center gap-3">
+        <h2 class="mb-0">Players</h2>
+        <div class="btn-group" role="group" aria-label="Player filter toggle">
+            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}"
+               class="btn btn-sm {% if not show_all and not selected_fantasy_team %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Free Agents
+            </a>
+            <a href="?real_team={{ selected_real_team }}&position={{ selected_position }}&show_all=1"
+               class="btn btn-sm {% if show_all or selected_fantasy_team %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                All Players
+            </a>
+        </div>
     </div>
     {% if current_week %}
     <span class="text-muted small">Week: {{ current_week.start_date }} &ndash; {{ current_week.end_date }}</span>
@@ -51,7 +52,7 @@
         <select name="fantasy_team" class="form-select">
             <option value="">All Fantasy Teams</option>
             {% for ft in fantasy_teams %}
-            <option value="{{ ft.id }}" {% if selected_fantasy_team == ft.id|stringformat:"d" %}selected{% endif %}>{{ ft }}</option>
+            <option value="{{ ft.id }}" {% if selected_fantasy_team == ft.id|stringformat:"d" %}selected{% endif %}>{% demo_team_name ft %}</option>
             {% endfor %}
         </select>
     </div>
@@ -107,18 +108,24 @@
                 <td><span class="badge" style="background-color: #6f42c1;">MGR</span></td>
                 <td>{{ cd.coach.real_team.abbreviation }}</td>
                 {% if show_all or selected_fantasy_team %}
-                <td>{{ cd.coach.fantasy_team|default:"—" }}</td>
+                <td>{% if cd.coach.fantasy_team %}{% demo_team_name cd.coach.fantasy_team %}{% else %}—{% endif %}</td>
                 {% endif %}
                 <td class="text-end">{{ cd.coach.cached_weekly_points|pts_format }}</td>
                 <td class="text-end">{{ cd.coach.cached_season_points|pts_format }}</td>
                 <td class="text-nowrap">
                     <a href="{% url 'league:coach_detail' cd.coach.id %}" class="btn btn-sm btn-outline-primary">Details</a>
                     {% if request.fantasy_team and not request.fantasy_team.is_commissioner and not cd.coach.fantasy_team and not user_has_coach %}
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-success" disabled style="pointer-events:none;">Add</button>
+                    </span>
+                    {% else %}
                     <form method="post" action="{% url 'league:member_add_coach' cd.coach.id %}" class="d-inline">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                         <button type="submit" class="btn btn-sm btn-success">Add</button>
                     </form>
+                    {% endif %}
                     {% endif %}
                 </td>
             </tr>
@@ -186,7 +193,7 @@
                 </td>
                 <td>{{ pd.player.real_team.abbreviation }}</td>
                 {% if show_all or selected_fantasy_team %}
-                <td>{{ pd.player.fantasy_team|default:"—" }}</td>
+                <td>{% if pd.player.fantasy_team %}{% demo_team_name pd.player.fantasy_team %}{% else %}—{% endif %}</td>
                 {% endif %}
                 <td class="text-end">{{ pd.weekly_points|pts_format }}</td>
                 <td class="text-end">{{ pd.season_points|pts_format }}</td>
@@ -194,11 +201,17 @@
                 <td class="text-nowrap">
                     <a href="{% url 'league:player_detail' pd.player.id %}?next={{ request.get_full_path|urlencode }}" class="btn btn-sm btn-outline-primary">Details</a>
                     {% if request.fantasy_team and not request.fantasy_team.is_commissioner and not pd.player.fantasy_team %}
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-success" disabled style="pointer-events:none;">Add</button>
+                    </span>
+                    {% else %}
                     <form method="post" action="{% url 'league:member_add_player' pd.player.id %}" class="d-inline">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.get_full_path }}">
                         <button type="submit" class="btn btn-sm btn-success">Add</button>
                     </form>
+                    {% endif %}
                     {% endif %}
                 </td>
             </tr>

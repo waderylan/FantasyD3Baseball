@@ -16,7 +16,7 @@
                 <th>Position</th>
                 <th>School</th>
                 <th>Team</th>
-                <th>Detail</th>
+                {% if not is_demo %}<th>Detail</th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -59,12 +59,12 @@
                     {% elif item.coach %}{{ item.coach.real_team.abbreviation }}
                     {% else %}—{% endif %}
                 </td>
-                <td>{{ item.fantasy_team|default:"—" }}</td>
-                <td class="text-muted small">{{ item.description|default:"" }}</td>
+                <td>{% if item.fantasy_team %}{% demo_team_name item.fantasy_team %}{% else %}—{% endif %}</td>
+                {% if not is_demo %}<td class="text-muted small">{{ item.description|default:"" }}</td>{% endif %}
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center text-muted py-3">No activity yet.</td>
+                <td colspan="{% if is_demo %}6{% else %}7{% endif %}" class="text-center text-muted py-3">No activity yet.</td>
             </tr>
             {% endfor %}
         </tbody>

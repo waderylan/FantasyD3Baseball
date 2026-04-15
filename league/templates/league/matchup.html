@@ -33,7 +33,7 @@
         <select class="form-select form-select-sm" style="min-width:260px" onchange="if(this.value) window.location=this.value">
             {% for m in all_matchups %}
             <option value="{% url 'league:weekly_matchup' current_week.id m.id %}" {% if m.id == matchup.id %}selected{% endif %}>
-                {{ m.team_1 }} vs {% if m.team_2 %}{{ m.team_2 }}{% else %}BYE{% endif %}
+                {% demo_team_name m.team_1 %} vs {% if m.team_2 %}{% demo_team_name m.team_2 %}{% else %}BYE{% endif %}
             </option>
             {% endfor %}
         </select>
@@ -46,7 +46,7 @@
         <select name="matchup_id" class="form-select form-select-sm" style="min-width:260px" onchange="this.form.submit()">
             {% for m in all_matchups %}
             <option value="{{ m.id }}" {% if m.id == matchup.id %}selected{% endif %}>
-                {{ m.team_1 }} vs {% if m.team_2 %}{{ m.team_2 }}{% else %}BYE{% endif %}
+                {% demo_team_name m.team_1 %} vs {% if m.team_2 %}{% demo_team_name m.team_2 %}{% else %}BYE{% endif %}
             </option>
             {% endfor %}
         </select>
@@ -66,7 +66,7 @@
         <div class="row text-center">
             <div class="col-5">
                 <a href="{% url 'league:roster' matchup.team_1.id %}" class="text-decoration-none" style="color:var(--navy);">
-                    <h3 class="fw-bold mb-1">{{ matchup.team_1 }}</h3>
+                    <h3 class="fw-bold mb-1">{% demo_team_name matchup.team_1 %}</h3>
                 </a>
                 <div class="display-4 fw-bold" style="font-size:3rem; color:var(--navy);">{{ t1_pts|pts_format }}</div>
             </div>
@@ -76,7 +76,7 @@
             <div class="col-5">
                 {% if matchup.team_2 %}
                 <a href="{% url 'league:roster' matchup.team_2.id %}" class="text-decoration-none" style="color:var(--navy);">
-                    <h3 class="fw-bold mb-1">{{ matchup.team_2 }}</h3>
+                    <h3 class="fw-bold mb-1">{% demo_team_name matchup.team_2 %}</h3>
                 </a>
                 <div class="display-4 fw-bold" style="font-size:3rem; color:var(--navy);">{{ t2_pts|pts_format }}</div>
                 {% else %}
@@ -92,7 +92,7 @@
 
 {# ========= TEAM 1 ========= #}
 <div class="col-md-6 mb-4">
-    <h5 class="section-header mb-3">{{ matchup.team_1 }}</h5>
+    <h5 class="section-header mb-3">{% demo_team_name matchup.team_1 %}</h5>
 
     {# --- Hitters + Hitting Bench --- #}
     <div class="table-responsive mb-3">
@@ -256,7 +256,7 @@
 {# ========= TEAM 2 ========= #}
 {% if matchup.team_2 %}
 <div class="col-md-6 mb-4">
-    <h5 class="section-header mb-3">{{ matchup.team_2 }}</h5>
+    <h5 class="section-header mb-3">{% demo_team_name matchup.team_2 %}</h5>
 
     {# --- Hitters + Hitting Bench --- #}
     <div class="table-responsive mb-3">
