@@ -6,10 +6,21 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="mb-0">My Disputes</h2>
     <div class="d-flex gap-2">
+        {% if is_demo %}
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-warning" disabled style="pointer-events:none;">+ New Player Dispute</button>
+        </span>
+        {% for coach in my_coaches %}
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-success" disabled style="pointer-events:none;">+ New Coach Dispute ({{ coach.last_name }})</button>
+        </span>
+        {% endfor %}
+        {% else %}
         <a href="{% url 'league:dispute_select_player' %}" class="btn btn-warning">+ New Player Dispute</a>
         {% for coach in my_coaches %}
         <a href="{% url 'league:coach_dispute_select_game' coach.id %}" class="btn btn-success">+ New Coach Dispute ({{ coach.last_name }})</a>
         {% endfor %}
+        {% endif %}
     </div>
 </div>
 

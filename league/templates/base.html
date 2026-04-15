@@ -58,8 +58,8 @@
         </div>
 
         <div class="sidebar-footer">
-            <div class="sidebar-team-name">{{ request.fantasy_team }}</div>
-            {% if not request.fantasy_team.is_commissioner %}
+            <div class="sidebar-team-name">{% demo_team_name request.fantasy_team %}</div>
+            {% if not request.fantasy_team.is_commissioner and not is_demo %}
             <a class="sidebar-link" href="{% url 'league:team_settings' %}">
                 <i class="bi bi-gear-fill"></i><span>Settings</span>
             </a>
@@ -77,10 +77,33 @@
     {% endif %}
 
     <div class="main-content {% if not request.fantasy_team %}main-content-full{% endif %}">
+        {% if is_demo %}
+        <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background-color:#fff3cd;border-bottom:2px solid var(--navy);font-size:0.9rem;">
+            <span><strong>Demo Mode</strong> &nbsp;&middot;&nbsp; Read-only view</span>
+            <div class="d-flex align-items-center gap-3">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Viewing as: {% demo_team_name request.fantasy_team %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% for dt in demo_teams %}
+                        <li>
+                            <a class="dropdown-item {% if dt.id == request.fantasy_team.id %}active{% endif %}"
+                               href="{% url 'league:demo_switch_team' dt.id %}">
+                                {{ dt.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <a href="{% url 'league:logout' %}" class="fw-semibold text-dark">Exit Demo</a>
+            </div>
+        </div>
+        {% endif %}
         {% if messages %}
         {% for message in messages %}
         <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
-            {{ message|safe }}
+            {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
@@ -90,6 +113,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+            new bootstrap.Tooltip(el);
+        });
+    </script>
     {% if request.fantasy_team %}
     <script>
         const sidebarToggle = document.getElementById('sidebarToggle');

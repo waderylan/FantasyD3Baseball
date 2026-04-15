@@ -11,11 +11,15 @@
         <p class="mb-0">
             <span class="badge bg-{{ player.position|position_badge_color }}">{{ player.position }}</span>
             <span class="text-muted ms-1">{{ player.real_team.name }}</span>
-            {% if player.fantasy_team %}<span class="text-muted ms-2">&middot; {{ player.fantasy_team }}</span>{% endif %}
+            {% if player.fantasy_team %}<span class="text-muted ms-2">&middot; {% demo_team_name player.fantasy_team %}</span>{% endif %}
         </p>
     </div>
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
-        {% if not player.fantasy_team %}
+        {% if is_demo %}
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-success" disabled style="pointer-events:none;">+ Add to My Team</button>
+        </span>
+        {% elif not player.fantasy_team %}
         <form method="post" action="{% url 'league:member_add_player' player.id %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -79,7 +83,15 @@
                 <td><a href="{% url 'league:edit_game_log' 'pitching' item.log.id %}" class="btn btn-sm btn-warning">Edit</a></td>
                 {% endif %}
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
-                <td><a href="{% url 'league:submit_dispute' item.log.player.id item.log.game.id %}" class="btn btn-sm btn-outline-danger" style="color:#f57c00;border-color:#f57c00">Dispute</a></td>
+                <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events:none;color:#f57c00;border-color:#f57c00">Dispute</button>
+                    </span>
+                    {% else %}
+                    <a href="{% url 'league:submit_dispute' item.log.player.id item.log.game.id %}" class="btn btn-sm btn-outline-danger" style="color:#f57c00;border-color:#f57c00">Dispute</a>
+                    {% endif %}
+                </td>
                 {% endif %}
             </tr>
             {% empty %}
@@ -125,6 +137,7 @@
                 <th class="text-end">Pts</th>
                 <th>Stats Updated At</th>
                 {% if request.fantasy_team.is_commissioner %}<th></th>{% endif %}
+                {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}<th></th>{% endif %}
             </tr>
         </thead>
         <tbody>
@@ -150,7 +163,15 @@
                 <td><a href="{% url 'league:edit_game_log' 'hitting' item.log.id %}" class="btn btn-sm btn-warning">Edit</a></td>
                 {% endif %}
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
-                <td><a href="{% url 'league:submit_dispute' item.log.player.id item.log.game.id %}" class="btn btn-sm btn-outline-danger" style="color:#f57c00;border-color:#f57c00">Dispute</a></td>
+                <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-danger" disabled style="pointer-events:none;color:#f57c00;border-color:#f57c00">Dispute</button>
+                    </span>
+                    {% else %}
+                    <a href="{% url 'league:submit_dispute' item.log.player.id item.log.game.id %}" class="btn btn-sm btn-outline-danger" style="color:#f57c00;border-color:#f57c00">Dispute</a>
+                    {% endif %}
+                </td>
                 {% endif %}
             </tr>
             {% empty %}
@@ -195,7 +216,13 @@
       <a href="{% url 'league:players' %}" class="btn btn-secondary">Back to Players</a>
     {% endif %}
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
+    {% if is_demo %}
+    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+        <button type="button" class="btn btn-outline-danger" disabled style="pointer-events:none;color:#f57c00;border-color:#f57c00">Report Missing Game</button>
+    </span>
+    {% else %}
     <a href="{% url 'league:submit_missing_game_dispute' player.id %}" class="btn btn-outline-danger" style="color:#f57c00;border-color:#f57c00">Report Missing Game</a>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

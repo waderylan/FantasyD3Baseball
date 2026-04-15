@@ -6,7 +6,7 @@
 {% block content %}
 <h2>{{ player }} - Game Logs</h2>
 <p><strong>Position:</strong> {{ player.position }} | <strong>Real Team:</strong> {{ player.real_team }}
-{% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {{ player.fantasy_team }}{% endif %}</p>
+{% if player.fantasy_team %} | <strong>Fantasy Team:</strong> {% demo_team_name player.fantasy_team %}{% endif %}</p>
 
 {% if player.is_pitcher %}
 <div class="table-responsive">

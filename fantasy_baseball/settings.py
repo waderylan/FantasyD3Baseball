@@ -61,6 +61,10 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'league.context_processors.demo_context',
+            ],
+            'builtins': [
+                'league.templatetags.demo_tags',
             ],
         },
     },
@@ -111,6 +115,10 @@ SESSION_COOKIE_SAMESITE = 'Strict'
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
 
 CSRF_FAILURE_VIEW = 'league.views.csrf_failure'
 CSRF_COOKIE_AGE = 31449600   # 1 year
@@ -131,6 +139,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # --- Ingest API ---
 
 INGEST_SECRET = os.environ.get('INGEST_SECRET', '')
+if not DEBUG and not INGEST_SECRET:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured('INGEST_SECRET must be set in production.')
 
 
 # --- Messages ---

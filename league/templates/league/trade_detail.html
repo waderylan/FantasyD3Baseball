@@ -24,7 +24,7 @@
 <div class="row g-4 mb-4">
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header text-white" style="background-color:var(--navy);"><strong>{{ trade.sender }}</strong> gives</div>
+            <div class="card-header text-white" style="background-color:var(--navy);"><strong>{% demo_team_name trade.sender %}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in give_items %}
                 <li class="list-group-item">
@@ -42,7 +42,7 @@
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header text-white" style="background-color:var(--navy);"><strong>{{ trade.receiver }}</strong> gives</div>
+            <div class="card-header text-white" style="background-color:var(--navy);"><strong>{% demo_team_name trade.receiver %}</strong> gives</div>
             <ul class="list-group list-group-flush">
                 {% for item in receive_items %}
                 <li class="list-group-item">
@@ -62,14 +62,33 @@
 
 {% if trade.status == 'pending' %}
     {% if is_sender %}
+    {% if is_demo %}
+    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+        <button type="button" class="btn btn-danger" disabled style="pointer-events:none;">Cancel Trade</button>
+    </span>
+    {% else %}
     <form method="post" action="{% url 'league:trade_cancel' trade.pk %}">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger"
             onclick="return confirm('Cancel this trade offer?')">Cancel Trade</button>
     </form>
     {% endif %}
+    {% endif %}
 
     {% if is_receiver %}
+    {% if is_demo %}
+    <div class="d-flex gap-2">
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-success" disabled style="pointer-events:none;">Accept</button>
+        </span>
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-warning" disabled style="pointer-events:none;">Amend</button>
+        </span>
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-danger" disabled style="pointer-events:none;">Deny</button>
+        </span>
+    </div>
+    {% else %}
     <form method="post" action="{% url 'league:trade_respond' trade.pk %}" class="d-flex gap-2">
         {% csrf_token %}
         <button type="submit" name="action" value="accept" class="btn btn-success"
@@ -78,6 +97,7 @@
         <button type="submit" name="action" value="deny" class="btn btn-danger"
             onclick="return confirm('Deny this trade?')">Deny</button>
     </form>
+    {% endif %}
     {% endif %}
 {% endif %}
 

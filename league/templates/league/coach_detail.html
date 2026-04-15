@@ -10,11 +10,15 @@
         <p class="mb-0">
             <span class="badge" style="background-color: #6f42c1;">MGR</span> |
             <strong>Real Team:</strong> {{ coach.real_team.name }}
-            {% if coach.fantasy_team %} | <strong>Fantasy Team:</strong> {{ coach.fantasy_team }}{% endif %}
+            {% if coach.fantasy_team %} | <strong>Fantasy Team:</strong> {% demo_team_name coach.fantasy_team %}{% endif %}
         </p>
     </div>
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
-        {% if not coach.fantasy_team and not user_has_coach %}
+        {% if is_demo %}
+        <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+            <button type="button" class="btn btn-success" disabled style="pointer-events:none;">+ Add to My Team</button>
+        </span>
+        {% elif not coach.fantasy_team and not user_has_coach %}
         <form method="post" action="{% url 'league:member_add_coach' coach.id %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
@@ -53,7 +57,13 @@
                 <td class="text-end fw-bold">{{ item.points|pts_format }}</td>
                 {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
                 <td>
+                    {% if is_demo %}
+                    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+                        <button type="button" class="btn btn-sm btn-outline-warning" disabled style="pointer-events:none;">Dispute</button>
+                    </span>
+                    {% else %}
                     <a href="{% url 'league:submit_coach_win_dispute' coach.id item.game.id %}?type={% if item.is_win %}remove_win{% else %}add_win{% endif %}" class="btn btn-sm btn-outline-warning">Dispute</a>
+                    {% endif %}
                 </td>
                 {% endif %}
             </tr>
@@ -77,7 +87,13 @@
 <div class="d-flex justify-content-between align-items-center mt-3">
     <a href="{% url 'league:players' %}" class="btn btn-secondary">Back to Players</a>
     {% if request.fantasy_team and not request.fantasy_team.is_commissioner %}
+    {% if is_demo %}
+    <span tabindex="0" class="d-inline-block" data-bs-toggle="tooltip" data-bs-title="Demo Mode">
+        <button type="button" class="btn btn-outline-warning" disabled style="pointer-events:none;">Report Missing Win</button>
+    </span>
+    {% else %}
     <a href="{% url 'league:coach_dispute_select_game' coach.id %}" class="btn btn-outline-warning">Report Missing Win</a>
+    {% endif %}
     {% endif %}
 </div>
 {% endblock %}

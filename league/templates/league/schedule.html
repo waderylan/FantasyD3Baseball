@@ -26,13 +26,13 @@
                 {% for md in wd.matchups %}
                 <tr>
                     <td class="{% if md.winner == md.matchup.team_1 %}fw-bold{% endif %}">
-                        {{ md.matchup.team_1 }}
+                        {% demo_team_name md.matchup.team_1 %}
                     </td>
                     <td class="text-center">
                         {{ md.t1_pts|pts_format }} - {{ md.t2_pts|pts_format }}
                     </td>
                     <td class="{% if md.winner == md.matchup.team_2 %}fw-bold{% endif %}">
-                        {% if md.matchup.team_2 %}{{ md.matchup.team_2 }}{% else %}<em>BYE</em>{% endif %}
+                        {% if md.matchup.team_2 %}{% demo_team_name md.matchup.team_2 %}{% else %}<em>BYE</em>{% endif %}
                     </td>
                     <td class="text-center">
                         <a href="{% url 'league:weekly_matchup' wd.week.id md.matchup.id %}" class="btn btn-sm btn-outline-primary">Details</a>

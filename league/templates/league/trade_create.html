@@ -4,7 +4,7 @@
 
 {% block content %}
 <h2>{% if counter_to %}Counter Offer{% else %}Propose Trade{% endif %}</h2>
-<p class="text-muted">Trading with <strong>{{ other_team }}</strong></p>
+<p class="text-muted">Trading with <strong>{% demo_team_name other_team %}</strong></p>
 
 {% if counter_to %}
 <div class="alert alert-info">You are sending a counter-offer in response to a trade proposal.</div>
@@ -93,7 +93,8 @@
     </div>
 
     <button type="submit" class="btn btn-primary"
-        onclick="return confirm('Send this trade offer to {{ other_team }}?')">
+        data-team="{% demo_team_name other_team %}"
+        onclick="return confirm('Send this trade offer to ' + this.dataset.team + '?')">
         Send Trade Offer
     </button>
     <a href="{% url 'league:roster' request.fantasy_team.pk %}" class="btn btn-secondary ms-2">Cancel</a>

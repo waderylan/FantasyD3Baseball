@@ -184,6 +184,36 @@ def logout_view(request):
     return redirect('league:login')
 
 
+def demo_login_view(request):
+    """Show the demo landing/intro page."""
+    return render(request, 'league/demo_landing.html')
+
+
+def demo_start_view(request):
+    """Set the demo session and enter the league."""
+    demo_team = FantasyTeam.objects.filter(is_commissioner=False).order_by('name').first()
+    if not demo_team:
+        messages.error(request, 'No teams available for demo.')
+        return redirect('league:login')
+    request.session['fantasy_team_id'] = demo_team.id
+    request.session['is_demo'] = True
+    return redirect('league:home_dashboard')
+
+
+def demo_switch_team(request, team_id):
+    """Switch which team the demo user is viewing as."""
+    if not request.session.get('is_demo'):
+        return redirect('league:home_dashboard')
+    try:
+        team = FantasyTeam.objects.get(pk=team_id, is_commissioner=False)
+    except FantasyTeam.DoesNotExist:
+        messages.error(request, 'Invalid team.')
+        return redirect('league:home_dashboard')
+    request.session['fantasy_team_id'] = team.id
+    referer = request.META.get('HTTP_REFERER')
+    return redirect(referer) if referer else redirect('league:home_dashboard')
+
+
 # --- Dashboard ---
 
 @login_required
@@ -796,6 +826,7 @@ def roster_view(request, team_id):
     })
 
 
+@login_required
 def set_lineup(request, team_id):
     team = get_object_or_404(FantasyTeam, pk=team_id, is_commissioner=False)
 
