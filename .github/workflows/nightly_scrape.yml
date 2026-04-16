@@ -33,6 +33,7 @@ jobs:
           echo "SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}" >> .env
           echo "DEBUG=False" >> .env
           echo "ALLOWED_HOSTS=localhost" >> .env
+          echo "INGEST_SECRET=${{ secrets.INGEST_SECRET }}" >> .env
 
       - name: Migrate database
         run: uv run python manage.py migrate --run-syncdb
