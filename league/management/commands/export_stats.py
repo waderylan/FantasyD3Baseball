@@ -113,6 +113,7 @@ class Command(BaseCommand):
             self.stderr.write(
                 self.style.WARNING(f'No games found between {start} and {end}.')
             )
+            return
 
         # Remove games whose stats are exact duplicates of another game for the
         # same date/teams (Liberty League lists some games under two calendar URLs).
